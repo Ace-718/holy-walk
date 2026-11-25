@@ -15,7 +15,8 @@ const UI = (function () {
     solved: [],            // per-stage array of booleans
     streak: 0,
     steps: 0,
-    sound: true,
+    sound: true,           // music and effects
+    voice: true,           // the narrator
     busy: false,           // true while a card is up or walking
     complete: false,
     lastSlot: -1,          // slot the right answer used last, so it can move
@@ -37,6 +38,7 @@ const UI = (function () {
         streak: app.streak,
         steps: app.steps,
         sound: app.sound,
+        voice: app.voice,
       }));
     } catch (e) { /* private mode, storage full — play on */ }
   }
@@ -51,6 +53,9 @@ const UI = (function () {
       if (typeof d.streak === 'number') app.streak = d.streak;
       if (typeof d.steps === 'number') app.steps = d.steps;
       if (typeof d.sound === 'boolean') app.sound = d.sound;
+      // older saves only had one switch: honour it for both
+      if (typeof d.voice === 'boolean') app.voice = d.voice;
+      else app.voice = app.sound;
     } catch (e) { /* start fresh */ }
   }
 
@@ -211,6 +216,18 @@ const UI = (function () {
     return { at: 1, gate: null };
   }
 
+  // Taps made while he is still stepping, held until his feet are under him.
+  let queuedSteps = 0;
+
+  /* Run the queued taps one at a time. Called when a stride lands, and on the
+     next frame after a tap is queued at the gate, so nothing is ever stranded. */
+  function drainQueue() {
+    while (queuedSteps > 0 && !Engine.walking && !app.busy && !app.complete) {
+      queuedSteps -= 1;
+      step();
+    }
+  }
+
   function step() {
     if (app.busy || app.complete) return;
     // The finale walk is not steerable: he is already on his way in.
@@ -218,8 +235,13 @@ const UI = (function () {
     const stage = STAGES[app.stageIndex];
     const { at, gate } = forwardTarget();
 
-    // mid-stride: let the current one finish before taking another
-    if (Engine.walking) return;
+    // Mid-stride: remember the tap instead of throwing it away. A brisk walker
+    // out-taps the stride animation, and dropping those taps made the button feel
+    // broken. The engine drains the queue the moment he lands.
+    if (Engine.walking) {
+      queuedSteps = Math.min(queuedSteps + 1, 4);
+      return;
+    }
 
     if (Engine.progress >= at - 0.005) {
       // standing at the gate: open it
@@ -323,6 +345,11 @@ const UI = (function () {
   function sayAloud(text, el) {
     if (!Speech.supported) {
       toast('This browser cannot read aloud.');
+      return;
+    }
+    // The narrator has its own switch, separate from music and effects.
+    if (!app.voice) {
+      toast('Read aloud is off. Turn it on in Settings.');
       return;
     }
     // tapping the speaker again stops it
@@ -512,6 +539,159 @@ const UI = (function () {
       setTimeout(() => Engine.miracle(), 420);
     } else {
       caption('The way is open. Walk on.');
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Reset — start the whole journey over
+     ═══════════════════════════════════════════════════════════════ */
+  let resetArmed = 0;
+
+  /* Clearing the walk is a two-tap action. Nothing is lost that a tap cannot
+     restore, but it is still the one button here that undoes everything, so it
+     asks once before it does it. */
+  function armReset() {
+    const btn = $('reset-btn');
+    if (!btn) return;
+    if (resetArmed) {
+      clearTimeout(resetArmed);
+      resetArmed = 0;
+      btn.classList.remove('armed');
+      btn.textContent = 'Start over';
+      doReset();
+      return;
+    }
+    btn.classList.add('armed');
+    btn.textContent = 'Tap again to erase';
+    resetArmed = setTimeout(() => {
+      resetArmed = 0;
+      btn.classList.remove('armed');
+      btn.textContent = 'Start over';
+    }, 4000);
+  }
+
+  function doReset() {
+    clearTimeout(resetArmed);
+    resetArmed = 0;
+    queuedSteps = 0;
+    app.solved = STAGES.map(() => []);
+    app.streak = 0;
+    app.steps = 0;
+    app.complete = false;
+    app.busy = false;
+    app.gateIndex = 0;
+    app.awaitingArrival = false;
+    save();
+    closeAll();
+    Speech.stop();
+    clearSpeaking();
+    enterStage(0, { fresh: true });
+    toast('A fresh road. Every prophet waits for you again.');
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Settings
+     ═══════════════════════════════════════════════════════════════ */
+  function openSettings() {
+    syncSettings();
+    buildQr();
+    openSheet('settings-overlay');
+  }
+
+  function syncSettings() {
+    const soundOn = $('set-sound');
+    const voiceOn = $('set-voice');
+    if (soundOn) soundOn.checked = app.sound;
+    if (voiceOn) voiceOn.checked = app.voice;
+    const vn = $('set-voice-note');
+    if (vn) {
+      vn.textContent = !Speech.supported
+        ? 'This browser has no speech engine.'
+        : (Speech.voiceName ? 'Voice: ' + Speech.voiceName : 'Your device’s English voice');
+    }
+    const walked = STAGES.filter((_, i) => stageDone(i)).length;
+    const st = $('set-progress');
+    if (st) st.textContent = walked + ' of ' + STAGES.length + ' journeys walked · ' + app.steps + ' steps';
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Share — a QR of this page
+     ═══════════════════════════════════════════════════════════════ */
+  let shareBuilt = false;
+
+  function shareUrl() {
+    // Built at runtime so the code always points at wherever the app is served
+    // from: the custom domain, GitHub Pages, or a local preview.
+    const url = new URL(window.location.href);
+    url.hash = '';
+    url.search = '';
+    return url.href;
+  }
+
+  function buildQr() {
+    const boxes = [$('qr-svg'), $('share-qr')].filter(Boolean);
+    if (!boxes.length || shareBuilt) return;
+    const url = shareUrl();
+    let qr = null;
+    try {
+      qr = QR.encode(url);
+    } catch (e) {
+      qr = null;
+    }
+    if (!qr) {
+      const holder = $('qr-btn');
+      if (holder) holder.hidden = true;
+      return;
+    }
+    const quiet = 2;
+    const span = qr.size + quiet * 2;
+    const ns = 'http://www.w3.org/2000/svg';
+
+    // One path for every dark module keeps the node count tiny.
+    let d = '';
+    for (let r = 0; r < qr.size; r++) {
+      for (let c = 0; c < qr.size; c++) {
+        if (qr.modules[r][c]) d += 'M' + (c + quiet) + ' ' + (r + quiet) + 'h1v1h-1z';
+      }
+    }
+
+    boxes.forEach((box) => {
+      box.innerHTML = '';
+      const svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('viewBox', '0 0 ' + span + ' ' + span);
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', 'QR code for ' + url);
+      const bg = document.createElementNS(ns, 'rect');
+      bg.setAttribute('width', String(span));
+      bg.setAttribute('height', String(span));
+      bg.setAttribute('fill', '#f6efdd');
+      svg.appendChild(bg);
+      const path = document.createElementNS(ns, 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('fill', '#0a0e17');
+      path.setAttribute('shape-rendering', 'crispEdges');
+      svg.appendChild(path);
+      box.appendChild(svg);
+    });
+    shareBuilt = true;
+  }
+
+  async function shareApp() {
+    const url = shareUrl();
+    const data = { title: 'Holy Walk', text: 'Walk the path of the prophets.', url: url };
+    try {
+      if (navigator.share) {
+        await navigator.share(data);
+        return;
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;   // the user backed out
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast('Link copied.');
+    } catch (e) {
+      toast(url);
     }
   }
 
@@ -832,7 +1012,7 @@ const UI = (function () {
   }
 
   function closeAll() {
-    ['stages-overlay', 'bible-overlay'].forEach((id) => { $(id).hidden = true; });
+    ['stages-overlay', 'bible-overlay', 'settings-overlay'].forEach((id) => { $(id).hidden = true; });
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -909,6 +1089,43 @@ const UI = (function () {
     $('c-next-btn').addEventListener('click', nextStage);
     $('c-replay-btn').addEventListener('click', replayStage);
 
+    // settings
+    $('settings-btn').addEventListener('click', openSettings);
+    $('settings-close').addEventListener('click', () => closeSheet('settings-overlay'));
+    $('settings-overlay').addEventListener('click', (e) => {
+      if (e.target === $('settings-overlay')) closeSheet('settings-overlay');
+    });
+
+    const setSound = $('set-sound');
+    if (setSound) {
+      setSound.addEventListener('change', () => {
+        // The HUD icon and this switch are the same setting, so route through it
+        // rather than duplicating the enable/bed logic.
+        if (app.sound !== setSound.checked) $('sound-btn').click();
+        syncSettings();
+      });
+    }
+    const setVoice = $('set-voice');
+    if (setVoice) {
+      setVoice.addEventListener('change', () => {
+        app.voice = setVoice.checked;
+        Speech.setEnabled(app.voice);
+        if (!app.voice) clearSpeaking();
+        syncSettings();
+        save();
+        if (app.voice) {
+          sayAloud('The narrator will read each question and every answer aloud.', null);
+        }
+      });
+    }
+
+    $('reset-btn').addEventListener('click', armReset);
+
+    // share: the tiny code in the bar is the door, the settings sheet has the
+    // full-size one you can actually hold a camera up to
+    $('qr-btn').addEventListener('click', openSettings);
+    $('share-btn').addEventListener('click', shareApp);
+
     // question card dismissal is not allowed by tapping the scrim:
     // the gate has to be answered.
     $('question-overlay').addEventListener('click', (e) => {
@@ -927,6 +1144,7 @@ const UI = (function () {
     if (!app.solved) app.solved = STAGES.map(() => []);
 
     Audio.setEnabled(app.sound);
+    Speech.setEnabled(app.voice);
 
     Engine.init({
       onStep: () => {
@@ -937,8 +1155,12 @@ const UI = (function () {
       onArrive: (progress) => {
         const { gate } = forwardTarget();
         if (gate != null && Engine.progress >= STAGES[app.stageIndex].gates[gate].at - 0.006) {
+          queuedSteps = 0;   // the gate takes over; nothing more to walk
           openQuestion(gate);
+          return;
         }
+        // He has landed; spend any taps made while he was moving.
+        drainQueue();
       },
       onMiracleDone: () => {
         // The way is open. Now he walks into it. If a scene has no finale
@@ -957,6 +1179,7 @@ const UI = (function () {
 
     bind();
     paintHud();
+    buildQr();
 
     // begin at the furthest unfinished stage
     enterStage(app.stageIndex, { resume: true });

@@ -92,13 +92,17 @@ svg path, svg circle {
 }
 
 /* On wide screens the scene is a tall painting, not a strip: hold it to a
-   column and let the background carry the rest of the page. */
-@media (min-aspect-ratio: 3/4) {
+   column and let the background carry the rest of the page. Height matters too —
+   a phone turned sideways is wide but short, and squeezing the game into a
+   240px strip there makes the question card unreadable. */
+@media (min-aspect-ratio: 3/4) and (min-height: 600px) {
   #app {
-    left: 50%;
-    right: auto;
-    width: min(100vw, calc(100vh * 0.62));
-    transform: translateX(-50%);
+    /* margin, not a transform: a transformed #app becomes the containing block
+       for the fixed overlays, which would then be trapped inside this column. */
+    left: 0;
+    right: 0;
+    width: min(100%, calc(100vh * 0.62));
+    margin: 0 auto;
     box-shadow: 0 0 0 1px rgba(217, 169, 78, .1), 0 40px 120px rgba(0, 0, 0, .7);
   }
 }
@@ -225,6 +229,58 @@ svg path, svg circle {
 #sound-btn[aria-pressed="false"] .ico-on { display: none; }
 #sound-btn[aria-pressed="false"] .ico-off { display: block; }
 #sound-btn[aria-pressed="false"] { color: var(--parch-mute); }
+
+/* ── Share QR in the progress row ────────────────────────────────── */
+.qr-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  margin: -4px -2px -4px 0;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(217, 169, 78, .3);
+  background: #f6efdd;
+  transition: transform .14s var(--ease);
+  box-shadow: 0 2px 9px rgba(0, 0, 0, .45);
+}
+.qr-btn:active { transform: scale(.93); }
+.qr-svg { display: block; width: 100%; height: 100%; }
+.qr-svg svg { display: block; width: 100%; height: 100%; }
+/* The QR modules are filled squares, not line icons: undo the global
+   stroke-only icon rule so the code actually draws. */
+.qr-svg svg path,
+.share-qr svg path { fill: #0a0e17; stroke: none; }
+
+/* A hint under the code, shown on hover or first focus */
+.qr-tip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: rgba(10, 14, 23, .97);
+  border: 1px solid rgba(217, 169, 78, .28);
+  color: var(--parch);
+  font-size: 10px;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-3px);
+  transition: opacity .18s var(--ease), transform .18s var(--ease);
+}
+.qr-btn:hover .qr-tip,
+.qr-btn:focus-visible .qr-tip { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 359px) {
+  .hud-actions { gap: 5px; }
+  .icon-btn { width: 31px; height: 31px; }
+  .streak { padding: 0 7px 0 6px; }
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    Path track
@@ -456,14 +512,19 @@ svg path, svg circle {
   inset: 0;
   z-index: 60;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  /* A column, so the card's own margin-top:auto can pin it to the bottom when it
+     fits and collapse to zero when it does not. A row with align-items:flex-end
+     pushed a tall card off the top edge, where scrolling could not reach it. */
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   padding: 0;
   /* A long question plus its answers and the Continue button can run past the
      bottom of a small phone. Scroll the sheet rather than cut it off, and leave
      room under the buttons for a thumb. */
   overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   /* The card is a bottom sheet: it should meet the screen edge, otherwise the
      Forward button underneath peeks out below it. The card's own padding already
      clears the home indicator. */
@@ -500,7 +561,10 @@ svg path, svg circle {
 }
 
 @media (min-width: 640px) {
-  .overlay { align-items: center; padding: 22px; }
+  /* "safe" keeps the card centered when it fits, but falls back to the top edge
+     when it is taller than the screen — a plain center hides the first line of a
+     long question in landscape, above the scrollable area. */
+  .overlay { justify-content: safe center; padding: 22px; }
   .card {
     border-radius: var(--r-xl);
     border-bottom: 1px solid rgba(217, 169, 78, .2);
@@ -733,7 +797,7 @@ svg path, svg circle {
 /* Sheets sit above the HUD and the progress rail. The rail is deliberately raised
    above the question card, but a full sheet that scrolls to the top would collide
    with it, so sheets get their own layer on top of both. */
-.sheet-overlay { align-items: flex-end; padding: 0; z-index: 70; }
+.sheet-overlay { justify-content: flex-end; padding: 0; z-index: 70; }
 
 .sheet {
   display: flex;
@@ -786,6 +850,130 @@ svg path, svg circle {
 }
 .sheet-body::-webkit-scrollbar { width: 5px; }
 .sheet-body::-webkit-scrollbar-thumb { background: rgba(217, 169, 78, .22); border-radius: 9px; }
+
+/* ══ Settings ══ */
+.settings-body { display: flex; flex-direction: column; gap: 2px; }
+
+.set-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(217, 169, 78, .1);
+  background: rgba(16, 23, 36, .5);
+  text-align: left;
+  cursor: pointer;
+}
+.set-row + .set-row { margin-top: 7px; }
+.set-plain { cursor: default; }
+
+.set-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.set-name {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--parch);
+  line-height: 1.15;
+}
+.set-note {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--parch-mute);
+}
+
+/* A switch that reads as carved brass rather than a browser default */
+.set-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 27px;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 189, 166, .28);
+  background: rgba(10, 14, 23, .9);
+  cursor: pointer;
+  transition: background .18s var(--ease), border-color .18s var(--ease);
+}
+.set-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #6c7688, #454e5e);
+  transition: transform .18s var(--ease), background .18s var(--ease);
+}
+.set-switch:checked {
+  background: linear-gradient(180deg, rgba(217, 169, 78, .5), rgba(217, 169, 78, .3));
+  border-color: rgba(244, 212, 146, .6);
+}
+.set-switch:checked::after {
+  transform: translateX(19px);
+  background: linear-gradient(180deg, #f8e3b4, #d9a94e);
+}
+
+.set-share {
+  margin-top: 12px;
+  padding: 14px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(217, 169, 78, .16);
+  background: rgba(16, 23, 36, .5);
+}
+.set-share-row { display: flex; align-items: center; gap: 13px; margin-top: 10px; }
+.share-qr {
+  display: block;
+  flex: none;
+  width: 92px;
+  height: 92px;
+  padding: 5px;
+  border-radius: 9px;
+  background: #f6efdd;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .4);
+}
+.share-qr svg { display: block; width: 100%; height: 100%; border-radius: 3px; }
+.set-share-text { min-width: 0; }
+.set-share-text p {
+  margin: 0 0 9px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--parch-dim);
+}
+.share-btn {
+  flex: none;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 11px;
+  font-size: 13px;
+}
+
+.reset-btn {
+  flex: none;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 11px;
+  font-size: 13px;
+  border-color: rgba(216, 106, 94, .34);
+  color: #e0a096;
+  background: rgba(120, 46, 40, .18);
+}
+.reset-btn.armed {
+  color: #ffd9d3;
+  border-color: rgba(216, 106, 94, .8);
+  background: rgba(150, 52, 44, .55);
+}
+
+.set-fine {
+  margin: 14px 2px 0;
+  font-size: 10.5px;
+  letter-spacing: .03em;
+  color: var(--parch-mute);
+  text-align: center;
+}
 
 /* ══ Stage list ══ */
 .stage-row {

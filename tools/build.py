@@ -17,6 +17,7 @@ JS_ORDER = [
     "stages.js",
     "audio.js",
     "speech.js",
+    "qr.js",
     "scenes.js",
     "engine.js",
     "bible.js",

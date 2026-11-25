@@ -41,6 +41,9 @@
       <button id="bible-btn" class="icon-btn" aria-haspopup="dialog" aria-label="Open the King James Bible">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z" /><path d="M4 20.5A2.5 2.5 0 016.5 18H19v3H6.5" /><path d="M11.5 7v7M9 9.5h5" /></svg>
       </button>
+      <button id="settings-btn" class="icon-btn" aria-haspopup="dialog" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2.2" /><circle cx="9" cy="17" r="2.2" /></svg>
+      </button>
       <button id="sound-btn" class="icon-btn" aria-label="Toggle sound" aria-pressed="true">
         <svg viewBox="0 0 24 24" aria-hidden="true" class="ico-on"><path d="M11 5L6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 010 7M18.5 6a9 9 0 010 12" /></svg>
         <svg viewBox="0 0 24 24" aria-hidden="true" class="ico-off"><path d="M11 5L6 9H3v6h3l5 4z" /><path d="M16 9l5 6M21 9l-5 6" /></svg>
@@ -55,6 +58,10 @@
       <div class="track-nodes" id="track-nodes"></div>
     </div>
     <span class="track-pct" id="track-pct" aria-live="polite">0%</span>
+    <button id="qr-btn" class="qr-btn" aria-label="Share this app: show the link and a QR code">
+      <span class="qr-svg" id="qr-svg" aria-hidden="true"></span>
+      <span class="qr-tip">Scan to share</span>
+    </button>
   </div>
 
   <!-- ══ Scene ══ -->
@@ -176,6 +183,67 @@
       </div>
       <div class="sheet-body" id="bible-read"></div>
       <div class="sheet-body" id="bible-themes" hidden></div>
+    </div>
+  </div>
+
+  <!-- ══ Settings drawer ══ -->
+  <div class="overlay sheet-overlay" id="settings-overlay" role="dialog" aria-modal="true" aria-labelledby="set-title" hidden>
+    <div class="sheet">
+      <div class="sheet-head">
+        <div>
+          <span class="eyebrow">Sound, sharing, the road</span>
+          <h2 id="set-title">Settings</h2>
+        </div>
+        <button class="icon-btn close" id="settings-close" aria-label="Close settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </div>
+      <div class="sheet-body settings-body">
+
+        <label class="set-row" for="set-sound">
+          <span class="set-text">
+            <span class="set-name">Sound</span>
+            <span class="set-note">Music, footsteps and chimes</span>
+          </span>
+          <input type="checkbox" id="set-sound" class="set-switch" role="switch" />
+        </label>
+
+        <label class="set-row" for="set-voice">
+          <span class="set-text">
+            <span class="set-name">Read aloud</span>
+            <span class="set-note" id="set-voice-note">The narrator reads each question and answer</span>
+          </span>
+          <input type="checkbox" id="set-voice" class="set-switch" role="switch" />
+        </label>
+
+        <div class="set-share">
+          <span class="set-name">Share Holy Walk</span>
+          <div class="set-share-row">
+            <span class="share-qr" id="share-qr"></span>
+            <div class="set-share-text">
+              <p>Point a phone camera at the code, or send the link.</p>
+              <button class="btn-ghost share-btn" id="share-btn" type="button">Copy link</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="set-row set-plain">
+          <span class="set-text">
+            <span class="set-name">Your journey</span>
+            <span class="set-note" id="set-progress">0 of 8 journeys walked</span>
+          </span>
+        </div>
+
+        <div class="set-row set-plain">
+          <span class="set-text">
+            <span class="set-name">Start over</span>
+            <span class="set-note">Clears every answer and returns to the first prophet</span>
+          </span>
+          <button class="btn-ghost reset-btn" id="reset-btn" type="button">Start over</button>
+        </div>
+
+        <p class="set-fine">Everything here works offline. Nothing leaves your phone.</p>
+      </div>
     </div>
   </div>
 

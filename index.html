@@ -119,13 +119,17 @@ svg path, svg circle {
 }
 
 /* On wide screens the scene is a tall painting, not a strip: hold it to a
-   column and let the background carry the rest of the page. */
-@media (min-aspect-ratio: 3/4) {
+   column and let the background carry the rest of the page. Height matters too —
+   a phone turned sideways is wide but short, and squeezing the game into a
+   240px strip there makes the question card unreadable. */
+@media (min-aspect-ratio: 3/4) and (min-height: 600px) {
   #app {
-    left: 50%;
-    right: auto;
-    width: min(100vw, calc(100vh * 0.62));
-    transform: translateX(-50%);
+    /* margin, not a transform: a transformed #app becomes the containing block
+       for the fixed overlays, which would then be trapped inside this column. */
+    left: 0;
+    right: 0;
+    width: min(100%, calc(100vh * 0.62));
+    margin: 0 auto;
     box-shadow: 0 0 0 1px rgba(217, 169, 78, .1), 0 40px 120px rgba(0, 0, 0, .7);
   }
 }
@@ -252,6 +256,58 @@ svg path, svg circle {
 #sound-btn[aria-pressed="false"] .ico-on { display: none; }
 #sound-btn[aria-pressed="false"] .ico-off { display: block; }
 #sound-btn[aria-pressed="false"] { color: var(--parch-mute); }
+
+/* ── Share QR in the progress row ────────────────────────────────── */
+.qr-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  margin: -4px -2px -4px 0;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(217, 169, 78, .3);
+  background: #f6efdd;
+  transition: transform .14s var(--ease);
+  box-shadow: 0 2px 9px rgba(0, 0, 0, .45);
+}
+.qr-btn:active { transform: scale(.93); }
+.qr-svg { display: block; width: 100%; height: 100%; }
+.qr-svg svg { display: block; width: 100%; height: 100%; }
+/* The QR modules are filled squares, not line icons: undo the global
+   stroke-only icon rule so the code actually draws. */
+.qr-svg svg path,
+.share-qr svg path { fill: #0a0e17; stroke: none; }
+
+/* A hint under the code, shown on hover or first focus */
+.qr-tip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: rgba(10, 14, 23, .97);
+  border: 1px solid rgba(217, 169, 78, .28);
+  color: var(--parch);
+  font-size: 10px;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-3px);
+  transition: opacity .18s var(--ease), transform .18s var(--ease);
+}
+.qr-btn:hover .qr-tip,
+.qr-btn:focus-visible .qr-tip { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 359px) {
+  .hud-actions { gap: 5px; }
+  .icon-btn { width: 31px; height: 31px; }
+  .streak { padding: 0 7px 0 6px; }
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    Path track
@@ -483,14 +539,19 @@ svg path, svg circle {
   inset: 0;
   z-index: 60;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  /* A column, so the card's own margin-top:auto can pin it to the bottom when it
+     fits and collapse to zero when it does not. A row with align-items:flex-end
+     pushed a tall card off the top edge, where scrolling could not reach it. */
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   padding: 0;
   /* A long question plus its answers and the Continue button can run past the
      bottom of a small phone. Scroll the sheet rather than cut it off, and leave
      room under the buttons for a thumb. */
   overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   /* The card is a bottom sheet: it should meet the screen edge, otherwise the
      Forward button underneath peeks out below it. The card's own padding already
      clears the home indicator. */
@@ -527,7 +588,10 @@ svg path, svg circle {
 }
 
 @media (min-width: 640px) {
-  .overlay { align-items: center; padding: 22px; }
+  /* "safe" keeps the card centered when it fits, but falls back to the top edge
+     when it is taller than the screen — a plain center hides the first line of a
+     long question in landscape, above the scrollable area. */
+  .overlay { justify-content: safe center; padding: 22px; }
   .card {
     border-radius: var(--r-xl);
     border-bottom: 1px solid rgba(217, 169, 78, .2);
@@ -760,7 +824,7 @@ svg path, svg circle {
 /* Sheets sit above the HUD and the progress rail. The rail is deliberately raised
    above the question card, but a full sheet that scrolls to the top would collide
    with it, so sheets get their own layer on top of both. */
-.sheet-overlay { align-items: flex-end; padding: 0; z-index: 70; }
+.sheet-overlay { justify-content: flex-end; padding: 0; z-index: 70; }
 
 .sheet {
   display: flex;
@@ -813,6 +877,130 @@ svg path, svg circle {
 }
 .sheet-body::-webkit-scrollbar { width: 5px; }
 .sheet-body::-webkit-scrollbar-thumb { background: rgba(217, 169, 78, .22); border-radius: 9px; }
+
+/* ══ Settings ══ */
+.settings-body { display: flex; flex-direction: column; gap: 2px; }
+
+.set-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(217, 169, 78, .1);
+  background: rgba(16, 23, 36, .5);
+  text-align: left;
+  cursor: pointer;
+}
+.set-row + .set-row { margin-top: 7px; }
+.set-plain { cursor: default; }
+
+.set-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.set-name {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--parch);
+  line-height: 1.15;
+}
+.set-note {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--parch-mute);
+}
+
+/* A switch that reads as carved brass rather than a browser default */
+.set-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 27px;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 189, 166, .28);
+  background: rgba(10, 14, 23, .9);
+  cursor: pointer;
+  transition: background .18s var(--ease), border-color .18s var(--ease);
+}
+.set-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #6c7688, #454e5e);
+  transition: transform .18s var(--ease), background .18s var(--ease);
+}
+.set-switch:checked {
+  background: linear-gradient(180deg, rgba(217, 169, 78, .5), rgba(217, 169, 78, .3));
+  border-color: rgba(244, 212, 146, .6);
+}
+.set-switch:checked::after {
+  transform: translateX(19px);
+  background: linear-gradient(180deg, #f8e3b4, #d9a94e);
+}
+
+.set-share {
+  margin-top: 12px;
+  padding: 14px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid rgba(217, 169, 78, .16);
+  background: rgba(16, 23, 36, .5);
+}
+.set-share-row { display: flex; align-items: center; gap: 13px; margin-top: 10px; }
+.share-qr {
+  display: block;
+  flex: none;
+  width: 92px;
+  height: 92px;
+  padding: 5px;
+  border-radius: 9px;
+  background: #f6efdd;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .4);
+}
+.share-qr svg { display: block; width: 100%; height: 100%; border-radius: 3px; }
+.set-share-text { min-width: 0; }
+.set-share-text p {
+  margin: 0 0 9px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--parch-dim);
+}
+.share-btn {
+  flex: none;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 11px;
+  font-size: 13px;
+}
+
+.reset-btn {
+  flex: none;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 11px;
+  font-size: 13px;
+  border-color: rgba(216, 106, 94, .34);
+  color: #e0a096;
+  background: rgba(120, 46, 40, .18);
+}
+.reset-btn.armed {
+  color: #ffd9d3;
+  border-color: rgba(216, 106, 94, .8);
+  background: rgba(150, 52, 44, .55);
+}
+
+.set-fine {
+  margin: 14px 2px 0;
+  font-size: 10.5px;
+  letter-spacing: .03em;
+  color: var(--parch-mute);
+  text-align: center;
+}
 
 /* ══ Stage list ══ */
 .stage-row {
@@ -1247,6 +1435,9 @@ svg path, svg circle {
       <button id="bible-btn" class="icon-btn" aria-haspopup="dialog" aria-label="Open the King James Bible">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z" /><path d="M4 20.5A2.5 2.5 0 016.5 18H19v3H6.5" /><path d="M11.5 7v7M9 9.5h5" /></svg>
       </button>
+      <button id="settings-btn" class="icon-btn" aria-haspopup="dialog" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2.2" /><circle cx="9" cy="17" r="2.2" /></svg>
+      </button>
       <button id="sound-btn" class="icon-btn" aria-label="Toggle sound" aria-pressed="true">
         <svg viewBox="0 0 24 24" aria-hidden="true" class="ico-on"><path d="M11 5L6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 010 7M18.5 6a9 9 0 010 12" /></svg>
         <svg viewBox="0 0 24 24" aria-hidden="true" class="ico-off"><path d="M11 5L6 9H3v6h3l5 4z" /><path d="M16 9l5 6M21 9l-5 6" /></svg>
@@ -1261,6 +1452,10 @@ svg path, svg circle {
       <div class="track-nodes" id="track-nodes"></div>
     </div>
     <span class="track-pct" id="track-pct" aria-live="polite">0%</span>
+    <button id="qr-btn" class="qr-btn" aria-label="Share this app: show the link and a QR code">
+      <span class="qr-svg" id="qr-svg" aria-hidden="true"></span>
+      <span class="qr-tip">Scan to share</span>
+    </button>
   </div>
 
   <!-- ══ Scene ══ -->
@@ -1382,6 +1577,67 @@ svg path, svg circle {
       </div>
       <div class="sheet-body" id="bible-read"></div>
       <div class="sheet-body" id="bible-themes" hidden></div>
+    </div>
+  </div>
+
+  <!-- ══ Settings drawer ══ -->
+  <div class="overlay sheet-overlay" id="settings-overlay" role="dialog" aria-modal="true" aria-labelledby="set-title" hidden>
+    <div class="sheet">
+      <div class="sheet-head">
+        <div>
+          <span class="eyebrow">Sound, sharing, the road</span>
+          <h2 id="set-title">Settings</h2>
+        </div>
+        <button class="icon-btn close" id="settings-close" aria-label="Close settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </div>
+      <div class="sheet-body settings-body">
+
+        <label class="set-row" for="set-sound">
+          <span class="set-text">
+            <span class="set-name">Sound</span>
+            <span class="set-note">Music, footsteps and chimes</span>
+          </span>
+          <input type="checkbox" id="set-sound" class="set-switch" role="switch" />
+        </label>
+
+        <label class="set-row" for="set-voice">
+          <span class="set-text">
+            <span class="set-name">Read aloud</span>
+            <span class="set-note" id="set-voice-note">The narrator reads each question and answer</span>
+          </span>
+          <input type="checkbox" id="set-voice" class="set-switch" role="switch" />
+        </label>
+
+        <div class="set-share">
+          <span class="set-name">Share Holy Walk</span>
+          <div class="set-share-row">
+            <span class="share-qr" id="share-qr"></span>
+            <div class="set-share-text">
+              <p>Point a phone camera at the code, or send the link.</p>
+              <button class="btn-ghost share-btn" id="share-btn" type="button">Copy link</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="set-row set-plain">
+          <span class="set-text">
+            <span class="set-name">Your journey</span>
+            <span class="set-note" id="set-progress">0 of 8 journeys walked</span>
+          </span>
+        </div>
+
+        <div class="set-row set-plain">
+          <span class="set-text">
+            <span class="set-name">Start over</span>
+            <span class="set-note">Clears every answer and returns to the first prophet</span>
+          </span>
+          <button class="btn-ghost reset-btn" id="reset-btn" type="button">Start over</button>
+        </div>
+
+        <p class="set-fine">Everything here works offline. Nothing leaves your phone.</p>
+      </div>
     </div>
   </div>
 
@@ -2288,6 +2544,453 @@ const Speech = (function () {
     isEnabled,
     get voiceName() { return voice ? voice.name : ''; },
   };
+})();
+
+/* ---------- qr.js ---------- */
+/* ═══════════════════════════════════════════════════════════════════
+   QR — a small, complete QR encoder in plain JavaScript.
+
+   The app ships as one file and must work with no network at all, so the share
+   code cannot come from a CDN. This encodes a URL in byte mode at error-
+   correction level M, picks the smallest version that fits (1–10), and returns a
+   module matrix. Nothing here needs a DOM.
+
+   Follows ISO/IEC 18004: Reed–Solomon over GF(256), the standard interleaving
+   order, all eight masks with the penalty rules, and BCH-coded format/version info.
+   ═══════════════════════════════════════════════════════════════════ */
+
+const QR = (function () {
+  'use strict';
+
+  /* ── Galois field GF(256), primitive polynomial 0x11d ─────────────── */
+  const EXP = new Uint8Array(512);
+  const LOG = new Uint8Array(256);
+  (function build() {
+    let x = 1;
+    for (let i = 0; i < 255; i++) {
+      EXP[i] = x;
+      LOG[x] = i;
+      x <<= 1;
+      if (x & 0x100) x ^= 0x11d;
+    }
+    for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+  })();
+
+  function gmul(a, b) {
+    if (a === 0 || b === 0) return 0;
+    return EXP[LOG[a] + LOG[b]];
+  }
+
+  function rsGenerator(deg) {
+    let poly = [1];
+    for (let i = 0; i < deg; i++) {
+      const next = new Array(poly.length + 1).fill(0);
+      for (let j = 0; j < poly.length; j++) {
+        next[j] ^= poly[j];
+        next[j + 1] ^= gmul(poly[j], EXP[i]);
+      }
+      poly = next;
+    }
+    return poly;
+  }
+
+  function rsEncode(data, ecLen) {
+    const gen = rsGenerator(ecLen);
+    const buf = data.concat(new Array(ecLen).fill(0));
+    for (let i = 0; i < data.length; i++) {
+      const factor = buf[i];
+      if (factor === 0) continue;
+      for (let j = 0; j < gen.length; j++) {
+        buf[i + j] ^= gmul(gen[j], factor);
+      }
+    }
+    return buf.slice(data.length);
+  }
+
+  /* ── Version tables ──────────────────────────────────────────────── */
+  // [total codewords, EC codewords per block, blocks group 1, data per block g1,
+  //  blocks group 2, data per block g2]  — level M, versions 1..10.
+  const VERSIONS = {
+    1:  [26, 10, 1, 16, 0, 0],
+    2:  [44, 16, 1, 28, 0, 0],
+    3:  [70, 26, 1, 44, 0, 0],
+    4:  [100, 18, 2, 32, 0, 0],
+    5:  [134, 24, 2, 43, 0, 0],
+    6:  [172, 16, 4, 27, 0, 0],
+    7:  [196, 18, 4, 31, 0, 0],
+    8:  [242, 22, 2, 38, 2, 39],
+    9:  [292, 22, 3, 36, 2, 37],
+    10: [346, 26, 4, 43, 1, 44],
+  };
+
+  const ALIGN = {
+    1: [], 2: [6, 18], 3: [6, 22], 4: [6, 26], 5: [6, 30], 6: [6, 34],
+    7: [6, 22, 38], 8: [6, 24, 42], 9: [6, 26, 46], 10: [6, 28, 50],
+  };
+
+  function dataCodewords(version) {
+    const v = VERSIONS[version];
+    return v[2] * v[3] + v[4] * v[5];
+  }
+
+  function charCountBits(version) {
+    return version < 10 ? 8 : 16;
+  }
+
+  function pickVersion(byteLen) {
+    for (let v = 1; v <= 10; v++) {
+      const need = 4 + charCountBits(v) + byteLen * 8;
+      if (need <= dataCodewords(v) * 8) return v;
+    }
+    return 0;
+  }
+
+  /* ── Bit stream ───────────────────────────────────────────────── */
+  function BitStream() {
+    this.bits = [];
+  }
+  BitStream.prototype.put = function (value, len) {
+    for (let i = len - 1; i >= 0; i--) this.bits.push((value >>> i) & 1);
+  };
+
+  function utf8(text) {
+    if (window.TextEncoder) return Array.from(new TextEncoder().encode(text));
+    const out = [];
+    for (let i = 0; i < text.length; i++) {
+      let c = text.charCodeAt(i);
+      if (c < 0x80) out.push(c);
+      else if (c < 0x800) out.push(0xc0 | (c >> 6), 0x80 | (c & 63));
+      else out.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+    }
+    return out;
+  }
+
+  function codewordsFor(bytes, version) {
+    const total = dataCodewords(version);
+    const bs = new BitStream();
+    bs.put(4, 4);                               // byte mode
+    bs.put(bytes.length, charCountBits(version));  // character count
+    for (let i = 0; i < bytes.length; i++) bs.put(bytes[i], 8);
+
+    // terminator, then pad to a whole byte
+    const cap = total * 8;
+    const term = Math.min(4, cap - bs.bits.length);
+    bs.put(0, term);
+    while (bs.bits.length % 8 !== 0) bs.bits.push(0);
+
+    const words = [];
+    for (let i = 0; i < bs.bits.length; i += 8) {
+      let b = 0;
+      for (let j = 0; j < 8; j++) b = (b << 1) | bs.bits[i + j];
+      words.push(b);
+    }
+    // alternating pad bytes until the block is full
+    let pad = 0xec;
+    while (words.length < total) {
+      words.push(pad);
+      pad = pad === 0xec ? 0x11 : 0xec;
+    }
+    return words;
+  }
+
+  function interleave(words, version) {
+    const [, ecLen, b1, d1, b2, d2] = VERSIONS[version];
+    const blocks = [];
+    let at = 0;
+    for (let i = 0; i < b1; i++) {
+      const data = words.slice(at, at + d1);
+      at += d1;
+      blocks.push({ data: data, ec: rsEncode(data, ecLen) });
+    }
+    for (let i = 0; i < b2; i++) {
+      const data = words.slice(at, at + d2);
+      at += d2;
+      blocks.push({ data: data, ec: rsEncode(data, ecLen) });
+    }
+
+    const out = [];
+    const maxData = Math.max(d1, d2);
+    for (let i = 0; i < maxData; i++) {
+      for (let b = 0; b < blocks.length; b++) {
+        if (i < blocks[b].data.length) out.push(blocks[b].data[i]);
+      }
+    }
+    for (let i = 0; i < ecLen; i++) {
+      for (let b = 0; b < blocks.length; b++) out.push(blocks[b].ec[i]);
+    }
+    return out;
+  }
+
+  /* ── Matrix ──────────────────────────────────────────────────── */
+  function makeMatrix(version) {
+    const size = version * 4 + 17;
+    const modules = [];
+    const fn = [];
+    for (let r = 0; r < size; r++) {
+      modules.push(new Array(size).fill(0));
+      fn.push(new Array(size).fill(false));
+    }
+    return { size: size, modules: modules, fn: fn };
+  }
+
+  function setFn(m, r, c, dark) {
+    if (r < 0 || c < 0 || r >= m.size || c >= m.size) return;
+    m.modules[r][c] = dark ? 1 : 0;
+    m.fn[r][c] = true;
+  }
+
+  /* A finder is a 7×7 target around (cr, cc): dark 3×3 core, light ring, dark
+     outline, then one light module of separator all the way round. */
+  function finder(m, cr, cc) {
+    for (let dr = -4; dr <= 4; dr++) {
+      for (let dc = -4; dc <= 4; dc++) {
+        const ring = Math.max(Math.abs(dr), Math.abs(dc));
+        setFn(m, cr + dr, cc + dc, ring === 3 || ring < 2);
+      }
+    }
+  }
+
+  function alignment(m, version) {
+    const pos = ALIGN[version];
+    const last = pos.length - 1;
+    for (let i = 0; i < pos.length; i++) {
+      for (let j = 0; j < pos.length; j++) {
+        // the three finder corners already own these spots
+        if ((i === 0 && j === 0) || (i === 0 && j === last) || (i === last && j === 0)) continue;
+        for (let dr = -2; dr <= 2; dr++) {
+          for (let dc = -2; dc <= 2; dc++) {
+            const ring = Math.max(Math.abs(dr), Math.abs(dc));
+            setFn(m, pos[i] + dr, pos[j] + dc, ring !== 1);
+          }
+        }
+      }
+    }
+  }
+
+  function bchFormat(data) {
+    let d = data << 10;
+    const gen = 0x537;
+    for (let i = 14; i >= 10; i--) {
+      if ((d >>> i) & 1) d ^= gen << (i - 10);
+    }
+    return ((data << 10) | d) ^ 0x5412;
+  }
+
+  function bchVersion(version) {
+    let d = version << 12;
+    const gen = 0x1f25;
+    for (let i = 17; i >= 12; i--) {
+      if ((d >>> i) & 1) d ^= gen << (i - 12);
+    }
+    return (version << 12) | d;
+  }
+
+  // level M is 00 in the format bits
+  function formatBits(mask) {
+    return bchFormat((0 << 3) | mask);
+  }
+
+  function placeFormat(m, mask) {
+    const bits = formatBits(mask);
+    const bit = (i) => ((bits >>> i) & 1) === 1;
+    const size = m.size;
+
+    // first copy: down the left side of the top-left finder, then across under it
+    for (let i = 0; i <= 5; i++) setFn(m, i, 8, bit(i));
+    setFn(m, 7, 8, bit(6));
+    setFn(m, 8, 8, bit(7));
+    setFn(m, 8, 7, bit(8));
+    for (let i = 9; i < 15; i++) setFn(m, 8, 14 - i, bit(i));
+
+    // second copy: bits 0–7 along the bottom of the top-right finder,
+    // bits 8–14 down the right of the bottom-left finder
+    for (let i = 0; i < 8; i++) setFn(m, 8, size - 1 - i, bit(i));
+    for (let i = 8; i < 15; i++) setFn(m, size - 15 + i, 8, bit(i));
+
+    // the always-dark module
+    setFn(m, size - 8, 8, true);
+  }
+
+  function placeVersion(m, version) {
+    if (version < 7) return;
+    const bits = bchVersion(version);
+    const size = m.size;
+    for (let i = 0; i < 18; i++) {
+      const dark = ((bits >>> i) & 1) === 1;
+      const a = size - 11 + (i % 3);
+      const b = Math.floor(i / 3);
+      setFn(m, a, b, dark);
+      setFn(m, b, a, dark);
+    }
+  }
+
+  function functionPatterns(m, version) {
+    const size = m.size;
+
+    for (let i = 0; i < size; i++) {
+      setFn(m, 6, i, i % 2 === 0);
+      setFn(m, i, 6, i % 2 === 0);
+    }
+
+    finder(m, 3, 3);
+    finder(m, 3, size - 4);
+    finder(m, size - 4, 3);
+
+    alignment(m, version);
+    placeVersion(m, version);
+    placeFormat(m, 0);          // reserve the area; the real mask is written later
+  }
+
+  function placeData(m, words) {
+    const size = m.size;
+    let bitIndex = 0;
+    const totalBits = words.length * 8;
+
+    for (let right = size - 1; right >= 1; right -= 2) {
+      if (right === 6) right = 5;                 // skip the vertical timing column
+      for (let vert = 0; vert < size; vert++) {
+        for (let j = 0; j < 2; j++) {
+          const col = right - j;
+          const upward = ((right + 1) & 2) === 0;
+          const row = upward ? size - 1 - vert : vert;
+          if (m.fn[row][col]) continue;
+          let dark = false;
+          if (bitIndex < totalBits) {
+            dark = ((words[bitIndex >>> 3] >>> (7 - (bitIndex & 7))) & 1) === 1;
+          }
+          m.modules[row][col] = dark ? 1 : 0;
+          bitIndex++;
+        }
+      }
+    }
+  }
+
+  function maskFn(mask, r, c) {
+    switch (mask) {
+      case 0: return (r + c) % 2 === 0;
+      case 1: return r % 2 === 0;
+      case 2: return c % 3 === 0;
+      case 3: return (r + c) % 3 === 0;
+      case 4: return (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0;
+      case 5: return ((r * c) % 2) + ((r * c) % 3) === 0;
+      case 6: return (((r * c) % 2) + ((r * c) % 3)) % 2 === 0;
+      case 7: return (((r + c) % 2) + ((r * c) % 3)) % 2 === 0;
+      default: return false;
+    }
+  }
+
+  function applyMask(m, mask) {
+    for (let r = 0; r < m.size; r++) {
+      for (let c = 0; c < m.size; c++) {
+        if (m.fn[r][c]) continue;
+        if (maskFn(mask, r, c)) m.modules[r][c] ^= 1;
+      }
+    }
+  }
+
+  /* ── Penalty scoring, ISO/IEC 18004 §8.8.2 ──────────────────── */
+  function penalty(m) {
+    const size = m.size;
+    const mod = m.modules;
+    let score = 0;
+
+    // rule 1: runs of five or more in a row
+    for (let r = 0; r < size; r++) {
+      for (const horizontal of [true, false]) {
+        let run = 1;
+        for (let i = 1; i < size; i++) {
+          const a = horizontal ? mod[r][i] : mod[i][r];
+          const b = horizontal ? mod[r][i - 1] : mod[i - 1][r];
+          if (a === b) {
+            run++;
+          } else {
+            if (run >= 5) score += 3 + (run - 5);
+            run = 1;
+          }
+        }
+        if (run >= 5) score += 3 + (run - 5);
+      }
+    }
+
+    // rule 2: 2×2 blocks of one colour
+    for (let r = 0; r < size - 1; r++) {
+      for (let c = 0; c < size - 1; c++) {
+        const v = mod[r][c];
+        if (v === mod[r][c + 1] && v === mod[r + 1][c] && v === mod[r + 1][c + 1]) score += 3;
+      }
+    }
+
+    // rule 3: the finder-like 1:1:3:1:1 pattern with four light modules beside it
+    const pattern = [1, 0, 1, 1, 1, 0, 1];
+    function matches(line, at) {
+      for (let i = 0; i < 7; i++) if (line[at + i] !== pattern[i]) return false;
+      let before = true;
+      let after = true;
+      for (let i = 1; i <= 4; i++) {
+        if (at - i >= 0 && line[at - i] !== 0) before = false;
+        if (at + 6 + i < line.length && line[at + 6 + i] !== 0) after = false;
+      }
+      return before || after;
+    }
+    for (let r = 0; r < size; r++) {
+      const row = mod[r];
+      const col = mod.map((line) => line[r]);
+      for (let i = 0; i + 7 <= size; i++) {
+        if (matches(row, i)) score += 40;
+        if (matches(col, i)) score += 40;
+      }
+    }
+
+    // rule 4: distance from a 50/50 balance
+    let dark = 0;
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) dark += mod[r][c];
+    }
+    const total = size * size;
+    const k = Math.ceil(Math.abs(dark * 20 - total * 10) / total) - 1;
+    score += Math.max(0, k) * 10;
+
+    return score;
+  }
+
+  function clone(m) {
+    return {
+      size: m.size,
+      modules: m.modules.map((row) => row.slice()),
+      fn: m.fn,
+    };
+  }
+
+  /* ── Public ─────────────────────────────────────────────────── */
+  function encode(text) {
+    if (!text) return null;
+    const bytes = utf8(text);
+    const version = pickVersion(bytes.length);
+    if (!version) return null;
+
+    const words = interleave(codewordsFor(bytes, version), version);
+
+    const base = makeMatrix(version);
+    functionPatterns(base, version);
+    placeData(base, words);
+
+    let best = null;
+    let bestScore = Infinity;
+    for (let mask = 0; mask < 8; mask++) {
+      const m = clone(base);
+      applyMask(m, mask);
+      // the format bits name the mask, so they are written after it
+      placeFormat(m, mask);
+      const score = penalty(m);
+      if (score < bestScore) {
+        bestScore = score;
+        best = m;
+      }
+    }
+    return { size: best.size, modules: best.modules, version: version, mask: bestScore };
+  }
+
+  return { encode: encode };
 })();
 
 /* ---------- scenes.js ---------- */
@@ -4514,7 +5217,8 @@ const UI = (function () {
     solved: [],            // per-stage array of booleans
     streak: 0,
     steps: 0,
-    sound: true,
+    sound: true,           // music and effects
+    voice: true,           // the narrator
     busy: false,           // true while a card is up or walking
     complete: false,
     lastSlot: -1,          // slot the right answer used last, so it can move
@@ -4536,6 +5240,7 @@ const UI = (function () {
         streak: app.streak,
         steps: app.steps,
         sound: app.sound,
+        voice: app.voice,
       }));
     } catch (e) { /* private mode, storage full — play on */ }
   }
@@ -4550,6 +5255,9 @@ const UI = (function () {
       if (typeof d.streak === 'number') app.streak = d.streak;
       if (typeof d.steps === 'number') app.steps = d.steps;
       if (typeof d.sound === 'boolean') app.sound = d.sound;
+      // older saves only had one switch: honour it for both
+      if (typeof d.voice === 'boolean') app.voice = d.voice;
+      else app.voice = app.sound;
     } catch (e) { /* start fresh */ }
   }
 
@@ -4710,6 +5418,18 @@ const UI = (function () {
     return { at: 1, gate: null };
   }
 
+  // Taps made while he is still stepping, held until his feet are under him.
+  let queuedSteps = 0;
+
+  /* Run the queued taps one at a time. Called when a stride lands, and on the
+     next frame after a tap is queued at the gate, so nothing is ever stranded. */
+  function drainQueue() {
+    while (queuedSteps > 0 && !Engine.walking && !app.busy && !app.complete) {
+      queuedSteps -= 1;
+      step();
+    }
+  }
+
   function step() {
     if (app.busy || app.complete) return;
     // The finale walk is not steerable: he is already on his way in.
@@ -4717,8 +5437,13 @@ const UI = (function () {
     const stage = STAGES[app.stageIndex];
     const { at, gate } = forwardTarget();
 
-    // mid-stride: let the current one finish before taking another
-    if (Engine.walking) return;
+    // Mid-stride: remember the tap instead of throwing it away. A brisk walker
+    // out-taps the stride animation, and dropping those taps made the button feel
+    // broken. The engine drains the queue the moment he lands.
+    if (Engine.walking) {
+      queuedSteps = Math.min(queuedSteps + 1, 4);
+      return;
+    }
 
     if (Engine.progress >= at - 0.005) {
       // standing at the gate: open it
@@ -4822,6 +5547,11 @@ const UI = (function () {
   function sayAloud(text, el) {
     if (!Speech.supported) {
       toast('This browser cannot read aloud.');
+      return;
+    }
+    // The narrator has its own switch, separate from music and effects.
+    if (!app.voice) {
+      toast('Read aloud is off. Turn it on in Settings.');
       return;
     }
     // tapping the speaker again stops it
@@ -5011,6 +5741,159 @@ const UI = (function () {
       setTimeout(() => Engine.miracle(), 420);
     } else {
       caption('The way is open. Walk on.');
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Reset — start the whole journey over
+     ═══════════════════════════════════════════════════════════════ */
+  let resetArmed = 0;
+
+  /* Clearing the walk is a two-tap action. Nothing is lost that a tap cannot
+     restore, but it is still the one button here that undoes everything, so it
+     asks once before it does it. */
+  function armReset() {
+    const btn = $('reset-btn');
+    if (!btn) return;
+    if (resetArmed) {
+      clearTimeout(resetArmed);
+      resetArmed = 0;
+      btn.classList.remove('armed');
+      btn.textContent = 'Start over';
+      doReset();
+      return;
+    }
+    btn.classList.add('armed');
+    btn.textContent = 'Tap again to erase';
+    resetArmed = setTimeout(() => {
+      resetArmed = 0;
+      btn.classList.remove('armed');
+      btn.textContent = 'Start over';
+    }, 4000);
+  }
+
+  function doReset() {
+    clearTimeout(resetArmed);
+    resetArmed = 0;
+    queuedSteps = 0;
+    app.solved = STAGES.map(() => []);
+    app.streak = 0;
+    app.steps = 0;
+    app.complete = false;
+    app.busy = false;
+    app.gateIndex = 0;
+    app.awaitingArrival = false;
+    save();
+    closeAll();
+    Speech.stop();
+    clearSpeaking();
+    enterStage(0, { fresh: true });
+    toast('A fresh road. Every prophet waits for you again.');
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Settings
+     ═══════════════════════════════════════════════════════════════ */
+  function openSettings() {
+    syncSettings();
+    buildQr();
+    openSheet('settings-overlay');
+  }
+
+  function syncSettings() {
+    const soundOn = $('set-sound');
+    const voiceOn = $('set-voice');
+    if (soundOn) soundOn.checked = app.sound;
+    if (voiceOn) voiceOn.checked = app.voice;
+    const vn = $('set-voice-note');
+    if (vn) {
+      vn.textContent = !Speech.supported
+        ? 'This browser has no speech engine.'
+        : (Speech.voiceName ? 'Voice: ' + Speech.voiceName : 'Your device’s English voice');
+    }
+    const walked = STAGES.filter((_, i) => stageDone(i)).length;
+    const st = $('set-progress');
+    if (st) st.textContent = walked + ' of ' + STAGES.length + ' journeys walked · ' + app.steps + ' steps';
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Share — a QR of this page
+     ═══════════════════════════════════════════════════════════════ */
+  let shareBuilt = false;
+
+  function shareUrl() {
+    // Built at runtime so the code always points at wherever the app is served
+    // from: the custom domain, GitHub Pages, or a local preview.
+    const url = new URL(window.location.href);
+    url.hash = '';
+    url.search = '';
+    return url.href;
+  }
+
+  function buildQr() {
+    const boxes = [$('qr-svg'), $('share-qr')].filter(Boolean);
+    if (!boxes.length || shareBuilt) return;
+    const url = shareUrl();
+    let qr = null;
+    try {
+      qr = QR.encode(url);
+    } catch (e) {
+      qr = null;
+    }
+    if (!qr) {
+      const holder = $('qr-btn');
+      if (holder) holder.hidden = true;
+      return;
+    }
+    const quiet = 2;
+    const span = qr.size + quiet * 2;
+    const ns = 'http://www.w3.org/2000/svg';
+
+    // One path for every dark module keeps the node count tiny.
+    let d = '';
+    for (let r = 0; r < qr.size; r++) {
+      for (let c = 0; c < qr.size; c++) {
+        if (qr.modules[r][c]) d += 'M' + (c + quiet) + ' ' + (r + quiet) + 'h1v1h-1z';
+      }
+    }
+
+    boxes.forEach((box) => {
+      box.innerHTML = '';
+      const svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('viewBox', '0 0 ' + span + ' ' + span);
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', 'QR code for ' + url);
+      const bg = document.createElementNS(ns, 'rect');
+      bg.setAttribute('width', String(span));
+      bg.setAttribute('height', String(span));
+      bg.setAttribute('fill', '#f6efdd');
+      svg.appendChild(bg);
+      const path = document.createElementNS(ns, 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('fill', '#0a0e17');
+      path.setAttribute('shape-rendering', 'crispEdges');
+      svg.appendChild(path);
+      box.appendChild(svg);
+    });
+    shareBuilt = true;
+  }
+
+  async function shareApp() {
+    const url = shareUrl();
+    const data = { title: 'Holy Walk', text: 'Walk the path of the prophets.', url: url };
+    try {
+      if (navigator.share) {
+        await navigator.share(data);
+        return;
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;   // the user backed out
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast('Link copied.');
+    } catch (e) {
+      toast(url);
     }
   }
 
@@ -5331,7 +6214,7 @@ const UI = (function () {
   }
 
   function closeAll() {
-    ['stages-overlay', 'bible-overlay'].forEach((id) => { $(id).hidden = true; });
+    ['stages-overlay', 'bible-overlay', 'settings-overlay'].forEach((id) => { $(id).hidden = true; });
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -5408,6 +6291,43 @@ const UI = (function () {
     $('c-next-btn').addEventListener('click', nextStage);
     $('c-replay-btn').addEventListener('click', replayStage);
 
+    // settings
+    $('settings-btn').addEventListener('click', openSettings);
+    $('settings-close').addEventListener('click', () => closeSheet('settings-overlay'));
+    $('settings-overlay').addEventListener('click', (e) => {
+      if (e.target === $('settings-overlay')) closeSheet('settings-overlay');
+    });
+
+    const setSound = $('set-sound');
+    if (setSound) {
+      setSound.addEventListener('change', () => {
+        // The HUD icon and this switch are the same setting, so route through it
+        // rather than duplicating the enable/bed logic.
+        if (app.sound !== setSound.checked) $('sound-btn').click();
+        syncSettings();
+      });
+    }
+    const setVoice = $('set-voice');
+    if (setVoice) {
+      setVoice.addEventListener('change', () => {
+        app.voice = setVoice.checked;
+        Speech.setEnabled(app.voice);
+        if (!app.voice) clearSpeaking();
+        syncSettings();
+        save();
+        if (app.voice) {
+          sayAloud('The narrator will read each question and every answer aloud.', null);
+        }
+      });
+    }
+
+    $('reset-btn').addEventListener('click', armReset);
+
+    // share: the tiny code in the bar is the door, the settings sheet has the
+    // full-size one you can actually hold a camera up to
+    $('qr-btn').addEventListener('click', openSettings);
+    $('share-btn').addEventListener('click', shareApp);
+
     // question card dismissal is not allowed by tapping the scrim:
     // the gate has to be answered.
     $('question-overlay').addEventListener('click', (e) => {
@@ -5426,6 +6346,7 @@ const UI = (function () {
     if (!app.solved) app.solved = STAGES.map(() => []);
 
     Audio.setEnabled(app.sound);
+    Speech.setEnabled(app.voice);
 
     Engine.init({
       onStep: () => {
@@ -5436,8 +6357,12 @@ const UI = (function () {
       onArrive: (progress) => {
         const { gate } = forwardTarget();
         if (gate != null && Engine.progress >= STAGES[app.stageIndex].gates[gate].at - 0.006) {
+          queuedSteps = 0;   // the gate takes over; nothing more to walk
           openQuestion(gate);
+          return;
         }
+        // He has landed; spend any taps made while he was moving.
+        drainQueue();
       },
       onMiracleDone: () => {
         // The way is open. Now he walks into it. If a scene has no finale
@@ -5456,6 +6381,7 @@ const UI = (function () {
 
     bind();
     paintHud();
+    buildQr();
 
     // begin at the furthest unfinished stage
     enterStage(app.stageIndex, { resume: true });
