@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#07090f" />
+<meta name="description" content="Walk the path of the prophets: eight Bible journeys, each blocked by a question you must answer from the King James text before the miracle opens the way." />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Path of the Prophets</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2307090f'/%3E%3Cpath d='M16 5v22M11 11h10' stroke='%23d9a94e' stroke-width='2.2' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='24' r='2.4' fill='%23f2d08a'/%3E%3C/svg%3E" />
+<style>/*@CSS*/</style>
+</head>
+<body>
+<div id="app" data-stage="moses">
+
+  <!-- ══ Top bar ══ -->
+  <header class="hud">
+    <button id="stage-btn" class="stage-chip" aria-haspopup="dialog" aria-label="Open the prophet stages">
+      <span class="stage-num" id="stage-num">I</span>
+      <span class="stage-text">
+        <span class="stage-name" id="stage-name">Moses</span>
+        <span class="stage-sub" id="stage-sub">The Red Sea</span>
+      </span>
+      <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+    </button>
+
+    <div class="hud-actions">
+      <div class="streak" id="streak" title="First-try answers in a row" aria-live="polite">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.4l6.1-.8z" /></svg>
+        <span id="streak-count">0</span>
+      </div>
+      <button id="bible-btn" class="icon-btn" aria-haspopup="dialog" aria-label="Open the King James Bible">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 016.5 3H19v15H6.5A2.5 2.5 0 004 20.5z" /><path d="M4 20.5A2.5 2.5 0 016.5 18H19v3H6.5" /><path d="M11.5 7v7M9 9.5h5" /></svg>
+      </button>
+      <button id="sound-btn" class="icon-btn" aria-label="Toggle sound" aria-pressed="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="ico-on"><path d="M11 5L6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 010 7M18.5 6a9 9 0 010 12" /></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="ico-off"><path d="M11 5L6 9H3v6h3l5 4z" /><path d="M16 9l5 6M21 9l-5 6" /></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ══ Path track ══ -->
+  <div class="track" id="track" aria-hidden="true">
+    <div class="track-rail"><div class="track-fill" id="track-fill"></div></div>
+    <div class="track-nodes" id="track-nodes"></div>
+  </div>
+
+  <!-- ══ Scene ══ -->
+  <main class="stage-wrap">
+    <canvas id="stage" aria-hidden="true"></canvas>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <div class="caption" id="caption" role="status" aria-live="polite">
+      <span id="caption-text">Walk toward the water.</span>
+    </div>
+  </main>
+
+  <!-- ══ Controls ══ -->
+  <footer class="pad">
+    <div class="pad-inner">
+      <div class="pad-meta">
+        <span class="pad-label">Pace</span>
+        <span class="pad-steps"><b id="steps-count">0</b> steps</span>
+      </div>
+      <button id="forward-btn" class="forward" aria-label="Walk forward">
+        <span class="forward-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M5 12h13M12.5 6l6 6-6 6" /></svg>
+        </span>
+        <span class="forward-word">Forward</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- ══ Question card ══ -->
+  <div class="overlay" id="question-overlay" role="dialog" aria-modal="true" aria-labelledby="q-prompt" hidden>
+    <div class="card question-card">
+      <div class="card-head">
+        <div class="seal" id="q-seal" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.5 1.2 6.5L12 17.3 6.1 20.4l1.2-6.5L2.5 9.4l6.6-.9z" /></svg>
+        </div>
+        <div class="card-head-text">
+          <span class="eyebrow" id="q-ref">Exodus 14</span>
+          <h2 class="q-prompt" id="q-prompt">Loading…</h2>
+        </div>
+      </div>
+      <div class="options" id="q-options" role="group" aria-labelledby="q-prompt"></div>
+      <div class="feedback" id="q-feedback" hidden>
+        <p id="q-feedback-text"></p>
+        <button class="link-btn" id="q-verse-btn">
+          <span>Read the verse</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M12.5 6l6 6-6 6" /></svg>
+        </button>
+      </div>
+      <div class="card-foot" id="q-foot" hidden>
+        <button class="btn-ghost" id="q-retry-btn">Try again</button>
+        <button class="btn-gold" id="q-next-btn">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Stage complete ══ -->
+  <div class="overlay" id="complete-overlay" role="dialog" aria-modal="true" aria-labelledby="c-title" hidden>
+    <div class="card complete-card">
+      <div class="burst" id="c-burst" aria-hidden="true">
+        <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" /><path d="M20 33l8 8 16-17" /></svg>
+      </div>
+      <h2 class="c-title" id="c-title">The way is open</h2>
+      <p class="c-summary" id="c-summary"></p>
+      <blockquote class="c-verse" id="c-verse"></blockquote>
+      <div class="card-foot">
+        <button class="btn-ghost" id="c-replay-btn">Walk again</button>
+        <button class="btn-gold" id="c-next-btn">Next prophet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Stage drawer ══ -->
+  <div class="overlay sheet-overlay" id="stages-overlay" role="dialog" aria-modal="true" aria-labelledby="s-title" hidden>
+    <div class="sheet">
+      <div class="sheet-head">
+        <div>
+          <span class="eyebrow">The roll of the prophets</span>
+          <h2 id="s-title">Choose a journey</h2>
+        </div>
+        <button class="icon-btn close" id="stages-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </div>
+      <div class="sheet-body" id="stages-list"></div>
+    </div>
+  </div>
+
+  <!-- ══ Bible drawer ══ -->
+  <div class="overlay sheet-overlay" id="bible-overlay" role="dialog" aria-modal="true" aria-labelledby="b-title" hidden>
+    <div class="sheet sheet-tall">
+      <div class="sheet-head">
+        <div>
+          <span class="eyebrow">King James Version · 66 books</span>
+          <h2 id="b-title">Holy Bible</h2>
+        </div>
+        <button class="icon-btn close" id="bible-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </div>
+      <div class="bible-tabs" role="tablist">
+        <button class="tab is-on" id="tab-read" role="tab" aria-selected="true">Read</button>
+        <button class="tab" id="tab-themes" role="tab" aria-selected="false">Study themes</button>
+      </div>
+      <div class="sheet-body" id="bible-read"></div>
+      <div class="sheet-body" id="bible-themes" hidden></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+<script>/*@JS*/</script>
+</body>
+</html>
