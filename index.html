@@ -2561,147 +2561,164 @@ const Scenes = (function () {
     if (open > 0.01) {
       const axis = w * AXIS_X;
 
-      // The corridor crosses the sea only, from the far shore to the water's edge.
-      // Beyond that the dry road on the bank takes over.
-      const halfTop = w * 0.003 + w * 0.008 * open;
-      const halfBot = w * 0.003 + w * 0.10 * open;
+      // Corridor width, in screen units, at the far shore (k = 0) and at the
+      // near water's edge (k = 1). The sea is a plane receding to the horizon,
+      // so everything about the cut scales with k.
+      const halfAt = function (k) {
+        return w * (0.004 + 0.070 * Math.pow(k, 1.45)) * open;
+      };
 
-      // The dry corridor: sand, darker and cooler with distance. A hard-edged
-      // gradient here read as a tent pitched in the sea, so the bed is warm near
-      // the viewer and broken up with grit and a wet sheen along the wall feet.
+      // The dry bed. Warm sand near the viewer, cooler with distance.
       const floor = ctx.createLinearGradient(0, seaTop, 0, farY);
-      floor.addColorStop(0, 'rgba(74,62,48,.96)');
-      floor.addColorStop(0.55, 'rgba(96,80,60,.97)');
-      floor.addColorStop(1, 'rgba(122,102,76,.98)');
+      floor.addColorStop(0, 'rgba(46,44,44,.97)');
+      floor.addColorStop(0.5, 'rgba(70,62,52,.97)');
+      floor.addColorStop(1, 'rgba(92,78,62,.98)');
       ctx.fillStyle = floor;
       ctx.beginPath();
-      ctx.moveTo(axis - halfTop, seaTop);
-      ctx.lineTo(axis + halfTop, seaTop);
-      ctx.lineTo(axis + halfBot, farY);
-      ctx.lineTo(axis - halfBot, farY);
+      ctx.moveTo(axis - halfAt(0), seaTop);
+      ctx.lineTo(axis + halfAt(0), seaTop);
+      ctx.lineTo(axis + halfAt(1), farY);
+      ctx.lineTo(axis - halfAt(1), farY);
       ctx.closePath();
       ctx.fill();
 
       // grit and pebbles on the bed, denser and larger toward the viewer
       const gr = rng(417);
-      for (let i = 0; i < 90; i++) {
-        const f = Math.pow(gr(), 0.55);
+      for (let i = 0; i < 110; i++) {
+        const f = Math.pow(gr(), 0.5);
         const y = lerp(seaTop, farY, f);
-        const half = lerp(halfTop, halfBot, f);
+        const half = halfAt(f);
         const x = axis + (gr() * 2 - 1) * half * 0.94;
-        const rr = (0.5 + gr() * 1.9) * (0.4 + f * 0.9) * open;
-        ctx.fillStyle = gr() > 0.5
-          ? 'rgba(38,30,22,' + (0.34 * open) + ')'
-          : 'rgba(196,172,132,' + (0.20 * open) + ')';
+        const rr = (0.4 + gr() * 2.0) * (0.25 + f * 1.15) * open;
+        ctx.fillStyle = gr() > 0.45
+          ? 'rgba(34,26,19,' + (0.36 * open) + ')'
+          : 'rgba(206,182,142,' + (0.22 * open) + ')';
         ctx.beginPath();
-        ctx.ellipse(x, y, rr, rr * 0.55, 0, 0, Math.PI * 2);
+        ctx.ellipse(x, y, rr, rr * 0.5, 0, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // damp shadow where each wall meets the bed
+      // Damp sand right under each wall foot.
       [-1, 1].forEach(function (side) {
-        const edge = ctx.createLinearGradient(axis + side * halfBot * 0.62, 0, axis + side * halfBot, 0);
-        edge.addColorStop(0, 'rgba(18,32,44,0)');
-        edge.addColorStop(1, 'rgba(18,32,44,.55)');
+        const e0 = axis + side * halfAt(0.35) * 0.55;
+        const e1 = axis + side * halfAt(1) * 0.62;
+        const edge = ctx.createLinearGradient(e0, 0, e1, 0);
+        edge.addColorStop(0, 'rgba(16,30,42,0)');
+        edge.addColorStop(1, 'rgba(16,30,42,.5)');
         ctx.fillStyle = edge;
         ctx.beginPath();
-        ctx.moveTo(axis + side * halfTop * 0.62, seaTop);
-        ctx.lineTo(axis + side * halfTop, seaTop);
-        ctx.lineTo(axis + side * halfBot, farY);
-        ctx.lineTo(axis + side * halfBot * 0.62, farY);
+        ctx.moveTo(axis + side * halfAt(0) * 0.55, seaTop);
+        ctx.lineTo(axis + side * halfAt(0), seaTop);
+        ctx.lineTo(axis + side * halfAt(1), farY);
+        ctx.lineTo(axis + side * halfAt(1) * 0.62, farY);
         ctx.closePath();
         ctx.fill();
       });
-
-      const sheen = ctx.createLinearGradient(0, seaTop, 0, farY);
-      sheen.addColorStop(0, 'rgba(162,200,222,.22)');
-      sheen.addColorStop(1, 'rgba(162,200,222,0)');
-      ctx.fillStyle = sheen;
-      ctx.beginPath();
-      ctx.moveTo(axis - halfTop * 0.6, seaTop);
-      ctx.lineTo(axis + halfTop * 0.6, seaTop);
-      ctx.lineTo(axis + halfBot * 0.5, farY);
-      ctx.lineTo(axis - halfBot * 0.5, farY);
-      ctx.closePath();
-      ctx.fill();
-
+      // ═══ The two walls of water ═══
+      // Each side is a wall of water standing beside the road: its foot on the sea's own receding surface
+      // (seaTop far away, farY near), its crest a line of constant height above that foot, so the crest
+      // converges toward the vanishing point — low at the far shore, tall near the viewer. The mass reaches a
+      // little way out over the sea and then fades into it, which is what keeps it from looking like a slab
+      // dropped into the water.
       [-1, 1].forEach(function (side) {
-        const xTop = axis + side * halfTop;
-        const xBot = axis + side * halfBot;
-        const wobble = Math.sin(t * 0.8 + side) * h * 0.004 * open;
+        const sway = Math.sin(t * 0.75 + side * 1.4) * h * 0.003 * open;
 
-        // inner face of the wall: a smooth curve bulging into the corridor
-        const face = function (f) {
-          // f runs 0 at the far shore to 1 at the near water's edge
-          return xTop + side * (halfBot - halfTop) * f
-                 + side * Math.sin(f * Math.PI) * w * 0.012 * open;
+        const footY = function (k) { return lerp(seaTop, farY, k); };
+        const innerX = function (k) { return axis + side * halfAt(k); };
+        const crestY = function (k) {
+          const jag = (Math.sin(k * 5.5 + t * 0.9 + side * 2.1) * h * 0.009
+                     + Math.sin(k * 15 + t * 1.6) * h * 0.0035
+                     + Math.sin(k * 33 + t * 2.4) * h * 0.0015) * open;
+          return lerp(h * 0.400, h * 0.255, k) + jag + sway * k;
+        };
+        const outerX = function (k) { return innerX(k) + side * w * (0.070 + 0.115 * k) * open; };
+
+        const body = function () {
+          ctx.beginPath();
+          for (let k = 0; k <= 1.001; k += 0.04) {
+            const px = innerX(k), py = crestY(k);
+            if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          }
+          for (let k = 0; k <= 1.001; k += 0.04) ctx.lineTo(outerX(k), crestY(k) + h * 0.004 * open);
+          for (let k = 1; k >= -0.001; k -= 0.04) ctx.lineTo(outerX(k), footY(k));
+          ctx.closePath();
         };
 
-        // crest: the same curve, lifted by a height that grows toward the viewer
-        const crestAt = function (f) {
-          const rise = h * (0.085 + 0.055 * f) * open;
-          const jag = Math.sin(f * 11 + t * 1.1 + side * 2) * h * 0.009 * open
-                    + Math.sin(f * 29 + t * 1.9) * h * 0.004 * open;
-          return seaTop - rise + jag + wobble * f;
-        };
-
-        const wg = ctx.createLinearGradient(0, seaTop - h * 0.2 * open, 0, farY);
-        wg.addColorStop(0, 'rgba(170,220,244,.55)');
-        wg.addColorStop(0.28, 'rgba(86,156,196,.76)');
-        wg.addColorStop(0.72, 'rgba(44,104,142,.86)');
-        wg.addColorStop(1, 'rgba(24,66,98,.92)');
-        // The heap of water reaches from the cut edge outward across the sea,
-        // tallest at the cut and settling back to the surface further out. Filling
-        // only a narrow strip here made the sea read as two painted columns.
-        // A wall, not a hill: the top stays near crest height across a short span
-        // and then drops steeply back into the sea at its outer shoulder.
-        const outerAt = function (k) { return face(0) + side * w * (0.012 + 0.15 * k); };
-        const outerY = function (k) {
-          const shoulder = 0.78;
-          if (k <= shoulder) return crestAt(0) + Math.sin(k * 9 + side) * h * 0.004 * open;
-          const q = (k - shoulder) / (1 - shoulder);
-          return lerp(crestAt(0), seaTop + h * 0.004, q * q);
-        };
-
+        // Water in the sea's own colour, so it reads as the sea standing up.
+        const wg = ctx.createLinearGradient(0, h * 0.24, 0, farY);
+        wg.addColorStop(0, '#7cc3e2');
+        wg.addColorStop(0.12, '#57a6cc');
+        wg.addColorStop(0.42, '#3585ad');
+        wg.addColorStop(0.74, '#1e5f84');
+        wg.addColorStop(1, '#123f5b');
         ctx.fillStyle = wg;
-        ctx.beginPath();
-        ctx.moveTo(face(1), farY);
-        for (let k = 1; k >= 0; k -= 0.04) ctx.lineTo(face(k), crestAt(k));
-        for (let k = 0; k <= 1; k += 0.04) ctx.lineTo(outerAt(k), outerY(k));
-        ctx.lineTo(outerAt(1), farY);
-        ctx.closePath();
+        body();
         ctx.fill();
 
-        // a lit rim along the crest, so the top edge catches the moon
-        ctx.strokeStyle = 'rgba(214,244,255,' + (0.55 * open) + ')';
-        ctx.lineWidth = 2;
+        // The outer side turns away from the moon: fading it into the sea removes the hard cut that made
+        // the mass look like a box standing in the water.
+        const fade = ctx.createLinearGradient(innerX(0.55), 0, outerX(1), 0);
+        fade.addColorStop(0, 'rgba(9,32,50,0)');
+        fade.addColorStop(0.70, 'rgba(9,32,50,.18)');
+        fade.addColorStop(1, 'rgba(9,32,50,.62)');
+        ctx.fillStyle = fade;
+        body();
+        ctx.fill();
+
+        // The face beside the road turns from the moon as well, so it darkens toward the road.
+        const faceShade = ctx.createLinearGradient(innerX(0.55), 0, axis + side * w * 0.36, 0);
+        faceShade.addColorStop(0, 'rgba(5,20,34,.26)');
+        faceShade.addColorStop(1, 'rgba(5,20,34,0)');
+        ctx.fillStyle = faceShade;
+        body();
+        ctx.fill();
+
+        // Foam along the crest: the one bright line, so the eye reads it as water.
+        ctx.lineJoin = 'round';
         ctx.beginPath();
-        for (let k = 0; k <= 1.001; k += 0.05) {
-          const px = face(k);
-          const py = crestAt(k);
+        for (let k = 0; k <= 1.001; k += 0.04) {
+          const px = innerX(k), py = crestY(k);
           if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
         }
+        ctx.strokeStyle = 'rgba(210,238,252,' + (0.26 * open) + ')';
+        ctx.lineWidth = 5;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,' + (0.66 * open) + ')';
+        ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // verticals of falling water on the inner face
+        // Water sheeting down the face.
         const r = rng(side < 0 ? 501 : 502);
-        ctx.strokeStyle = 'rgba(222,246,255,' + (0.16 * open) + ')';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 14; i++) {
-          const f = r();
-          const sx = face(f) - side * r() * w * 0.01;
-          const top = crestAt(f) + h * 0.01;
-          const len = h * (0.03 + r() * 0.1) * open;
+        for (let i = 0; i < 44; i++) {
+          const k = r();
+          const sx = innerX(k) - side * r() * w * 0.085 * open;
+          const top = crestY(k) + h * 0.005;
+          const len = (footY(k) - top) * (0.12 + r() * 0.62);
+          ctx.strokeStyle = 'rgba(222,246,255,' + ((0.04 + r() * 0.15) * open) + ')';
+          ctx.lineWidth = 0.6 + r() * 1.1;
           ctx.beginPath();
           ctx.moveTo(sx, top);
           ctx.lineTo(sx, top + len);
           ctx.stroke();
         }
 
-        // foam where the wall meets the water at the foot of the corridor
-        ctx.fillStyle = 'rgba(206,240,255,' + (0.22 * open) + ')';
+        // A dark line where the water stands on the seabed.
+        ctx.strokeStyle = 'rgba(4,16,26,' + (0.38 * open) + ')';
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.ellipse(face(1), farY - h * 0.003, w * 0.018, h * 0.006, 0, 0, Math.PI * 2);
+        for (let k = 0; k <= 1.001; k += 0.04) {
+          const px = innerX(k), py = footY(k);
+          if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        // Spray where the water breaks at the near end of the road.
+        const spray = ctx.createRadialGradient(innerX(1), footY(1), 0, innerX(1), footY(1), w * 0.085);
+        spray.addColorStop(0, 'rgba(212,240,254,' + (0.26 * open) + ')');
+        spray.addColorStop(1, 'rgba(212,240,254,0)');
+        ctx.fillStyle = spray;
+        ctx.beginPath();
+        ctx.ellipse(innerX(1), footY(1), w * 0.085, h * 0.017, 0, 0, Math.PI * 2);
         ctx.fill();
       });
     }
