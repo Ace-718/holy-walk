@@ -461,9 +461,10 @@ svg path, svg circle {
   align-items: flex-end;
   justify-content: center;
   padding: 0;
-  background: rgba(3, 5, 9, .74);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
+  /* light enough that the gate and the pilgrim stay visible behind the card */
+  background: linear-gradient(180deg, rgba(3, 5, 9, .2) 0%, rgba(3, 5, 9, .4) 50%, rgba(3, 5, 9, .62) 100%);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   animation: fade .22s var(--ease);
 }
 .overlay[hidden] { display: none; }
