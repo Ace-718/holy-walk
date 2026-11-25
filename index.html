@@ -138,7 +138,7 @@ svg path, svg circle {
    ═══════════════════════════════════════════════════════════════════ */
 .hud {
   position: relative;
-  z-index: 30;
+  z-index: 66;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -250,15 +250,32 @@ svg path, svg circle {
    ═══════════════════════════════════════════════════════════════════ */
 .track {
   position: relative;
-  z-index: 29;
-  padding: 9px 17px 5px;
-  background: rgba(6, 8, 13, .8);
+  z-index: 65;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 15px 11px;
+  background: rgba(6, 8, 13, .9);
+  border-bottom: 1px solid rgba(217, 169, 78, .07);
+}
+
+.track-rail { flex: 1 1 auto; }
+
+.track-pct {
+  flex: none;
+  min-width: 34px;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--gold-lit);
+  font-variant-numeric: tabular-nums;
 }
 .track-rail {
   position: relative;
-  height: 2px;
-  border-radius: 2px;
-  background: rgba(217, 169, 78, .15);
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(217, 169, 78, .16);
 }
 .track-fill {
   position: absolute;
@@ -271,16 +288,16 @@ svg path, svg circle {
 }
 .track-nodes {
   position: absolute;
-  inset: 0 17px;
+  inset: 0;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   pointer-events: none;
 }
 .track-node {
-  width: 7px;
-  height: 7px;
-  margin-top: -2.5px;
+  width: 8px;
+  height: 8px;
+  flex: none;
   border-radius: 50%;
   background: var(--ink-2);
   border: 1px solid rgba(217, 169, 78, .3);
@@ -461,10 +478,15 @@ svg path, svg circle {
   align-items: flex-end;
   justify-content: center;
   padding: 0;
-  /* light enough that the gate and the pilgrim stay visible behind the card */
-  background: linear-gradient(180deg, rgba(3, 5, 9, .2) 0%, rgba(3, 5, 9, .4) 50%, rgba(3, 5, 9, .62) 100%);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  /* A long question plus its answers and the Continue button can run past the
+     bottom of a small phone. Scroll the sheet rather than cut it off, and leave
+     room under the buttons for a thumb. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 14px;
+  /* Dim the scene a little so the card reads, but leave it sharp: a blur here
+     turned the whole painting to fog and hid the gate the card is asking about. */
+  background: linear-gradient(180deg, rgba(3, 5, 9, .05) 0%, rgba(3, 5, 9, .3) 46%, rgba(3, 5, 9, .6) 100%);
   animation: fade .22s var(--ease);
 }
 .overlay[hidden] { display: none; }
@@ -484,6 +506,9 @@ svg path, svg circle {
     linear-gradient(180deg, #131a27, #0b0f18);
   box-shadow: 0 -20px 60px rgba(0, 0, 0, .6);
   animation: rise .3s var(--ease);
+  /* pinned to the bottom of the sheet, and able to grow upward past the top */
+  margin-top: auto;
+  flex: none;
 }
 @keyframes rise {
   from { transform: translateY(26px); opacity: 0; }
@@ -721,7 +746,10 @@ svg path, svg circle {
 /* ═══════════════════════════════════════════════════════════════════
    Sheets (stages / bible)
    ═══════════════════════════════════════════════════════════════════ */
-.sheet-overlay { align-items: flex-end; padding: 0; }
+/* Sheets sit above the HUD and the progress rail. The rail is deliberately raised
+   above the question card, but a full sheet that scrolls to the top would collide
+   with it, so sheets get their own layer on top of both. */
+.sheet-overlay { align-items: flex-end; padding: 0; z-index: 70; }
 
 .sheet {
   display: flex;
@@ -1104,6 +1132,86 @@ svg path, svg circle {
     transition-duration: .01ms !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Read aloud
+   ═══════════════════════════════════════════════════════════════════ */
+.hear-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  margin-left: auto;
+  padding: 7px 11px 7px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(217, 169, 78, .32);
+  background: rgba(217, 169, 78, .10);
+  color: var(--gold-lit);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  transition: background .16s, border-color .16s, transform .1s;
+}
+.hear-btn:active { transform: scale(.96); background: rgba(217, 169, 78, .2); }
+.hear-btn svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hear-btn .ico-stop { display: none; fill: currentColor; stroke: none; }
+.hear-btn.playing {
+  background: rgba(217, 169, 78, .22);
+  border-color: rgba(244, 212, 146, .6);
+}
+.hear-btn.playing .ico-speaker { display: none; }
+.hear-btn.playing .ico-stop { display: block; }
+
+/* the speaker on each answer, kept quiet so it never competes with the text */
+.hear-mini {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 8px;
+  border: 1px solid rgba(201, 189, 166, .16);
+  background: rgba(6, 8, 13, .45);
+  color: var(--parch-mute);
+  transition: color .16s, border-color .16s, background .16s, transform .1s;
+}
+.hear-mini svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.hear-mini:active { transform: scale(.93); }
+.hear-mini.playing {
+  color: var(--gold-lit);
+  border-color: rgba(244, 212, 146, .55);
+  background: rgba(217, 169, 78, .16);
+}
+
+.feedback-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+.feedback-row p { flex: 1 1 auto; min-width: 0; }
+
+/* On a narrow phone the hear button drops its word and keeps the icon, so the
+   question still gets the full width of the card. */
+@media (max-width: 359px) {
+  .hear-btn .hear-label { display: none; }
+  .hear-btn { padding: 7px; }
+}
 </style>
 </head>
 <body>
@@ -1136,9 +1244,12 @@ svg path, svg circle {
   </header>
 
   <!-- ══ Path track ══ -->
-  <div class="track" id="track" aria-hidden="true">
-    <div class="track-rail"><div class="track-fill" id="track-fill"></div></div>
-    <div class="track-nodes" id="track-nodes"></div>
+  <div class="track" id="track">
+    <div class="track-rail">
+      <div class="track-fill" id="track-fill"></div>
+      <div class="track-nodes" id="track-nodes"></div>
+    </div>
+    <span class="track-pct" id="track-pct" aria-live="polite">0%</span>
   </div>
 
   <!-- ══ Scene ══ -->
@@ -1179,10 +1290,25 @@ svg path, svg circle {
           <span class="eyebrow" id="q-ref">Exodus 14</span>
           <h2 class="q-prompt" id="q-prompt">Loading…</h2>
         </div>
+        <button class="hear-btn" id="q-hear" type="button" aria-label="Read the question and answers aloud">
+          <svg class="ico-speaker" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M11 5L6 9H3v6h3l5 4z" />
+            <path d="M15.5 8.5a5 5 0 010 7M18.5 6a9 9 0 010 12" />
+          </svg>
+          <svg class="ico-stop" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="7" y="7" width="10" height="10" rx="2" />
+          </svg>
+          <span class="hear-label">Hear it</span>
+        </button>
       </div>
       <div class="options" id="q-options" role="group" aria-labelledby="q-prompt"></div>
       <div class="feedback" id="q-feedback" hidden>
-        <p id="q-feedback-text"></p>
+        <div class="feedback-row">
+          <p id="q-feedback-text"></p>
+          <button class="hear-mini" id="q-feedback-hear" type="button" aria-label="Read the feedback aloud">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 010 7" /></svg>
+          </button>
+        </div>
         <button class="link-btn" id="q-verse-btn">
           <span>Read the verse</span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M12.5 6l6 6-6 6" /></svg>
@@ -1803,61 +1929,174 @@ const Audio = (function () {
     if (master) master.gain.setTargetAtTime(on ? 0.85 : 0, ctx.currentTime, 0.05);
   }
 
-  /* ── Ambient bed: a slow, breathing drone tuned per scene ── */
+  /* ── The score ─────────────────────────────────────────────────
+     A slow heroic theme rather than a drone: a low string pad under a
+     French-horn line that climbs, with a soft war drum underneath. All
+     synthesized, so the app stays fully offline.
+     ─────────────────────────────────────────────────────────────── */
+  const SCORE = {
+    // Each journey has its own horn line, written in scale degrees.
+    'red-sea': { root: 146.83, horn: [0, 5, 7, 12, 7, 5], mode: [0, 2, 3, 5, 7, 8, 10] },
+    ark:       { root: 130.81, horn: [0, 3, 7, 10, 7, 3], mode: [0, 2, 3, 5, 7, 8, 10] },
+    jericho:   { root: 164.81, horn: [0, 4, 7, 12, 11, 7], mode: [0, 2, 4, 5, 7, 9, 11] },
+    elah:      { root: 146.83, horn: [0, 7, 12, 16, 12, 7], mode: [0, 2, 4, 5, 7, 9, 11] },
+    carmel:    { root: 130.81, horn: [0, 5, 8, 12, 8, 5], mode: [0, 2, 3, 5, 7, 8, 10] },
+    nineveh:   { root: 155.56, horn: [0, 4, 7, 12, 9, 7], mode: [0, 2, 3, 5, 7, 9, 10] },
+    den:       { root: 146.83, horn: [0, 3, 7, 8, 7, 3], mode: [0, 2, 3, 5, 7, 8, 10] },
+    jordan:    { root: 130.81, horn: [0, 4, 7, 12, 7, 4], mode: [0, 2, 4, 5, 7, 9, 11] },
+  };
+
+  const BEAT = 0.92;          // a slow march
+  const PHRASE = 8;            // beats per phrase
+  let scoreTimer = null;
+  let scoreScene = null;
+  let nextPhraseAt = 0;
+  let phraseIndex = 0;
+
+  function degree(root, mode, step) {
+    const oct = Math.floor(step / mode.length);
+    const deg = mode[((step % mode.length) + mode.length) % mode.length];
+    return root * Math.pow(2, oct) * Math.pow(2, deg / 12);
+  }
+
+  /* A horn: two detuned saws through a low-pass that opens as the note swells.
+     Reads as brass at low level without shipping a single sample. */
+  function horn(c, freq, at, dur, level, dest) {
+    const g = c.createGain();
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.Q.value = 0.8;
+    lp.frequency.setValueAtTime(420, at);
+    lp.frequency.linearRampToValueAtTime(1500, at + dur * 0.30);
+    lp.frequency.linearRampToValueAtTime(600, at + dur);
+
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.linearRampToValueAtTime(level, at + Math.min(0.22, dur * 0.3));
+    g.gain.setValueAtTime(level, at + dur * 0.62);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+
+    [0, -6].forEach((cents) => {
+      const osc = c.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      osc.detune.value = cents;
+      osc.connect(lp);
+      osc.start(at);
+      osc.stop(at + dur + 0.04);
+    });
+    lp.connect(g);
+    g.connect(dest);
+  }
+
+  /* A war drum: a pitched sine that falls away, plus a filtered noise skin. */
+  function drum(c, at, level, dest) {
+    const osc = c.createOscillator();
+    const g = c.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(96, at);
+    osc.frequency.exponentialRampToValueAtTime(48, at + 0.42);
+    g.gain.setValueAtTime(level, at);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.62);
+    osc.connect(g);
+    g.connect(dest);
+    osc.start(at);
+    osc.stop(at + 0.64);
+
+    const len = Math.floor(c.sampleRate * 0.18);
+    const buf = c.createBuffer(1, len, c.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 5);
+    }
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const bp = c.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 190;
+    bp.Q.value = 0.8;
+    const ng = c.createGain();
+    ng.gain.value = level * 0.5;
+    src.connect(bp); bp.connect(ng); ng.connect(dest);
+    src.start(at);
+  }
+
+  /* One phrase: pad chord, then the horn line over it, with drums on the pulse. */
+  function schedulePhrase(c, scene, at) {
+    const cfg = SCORE[scene] || SCORE['red-sea'];
+    const root = cfg.root;
+    const lift = phraseIndex % 2 === 1;
+
+    // Pad: root, fifth and octave, held across the whole phrase
+    [0, 4, 7].forEach((step, i) => {
+      const f = degree(root, cfg.mode, step + (lift ? 2 : 0)) / 2;
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      const lp = c.createBiquadFilter();
+      osc.type = i === 0 ? 'triangle' : 'sine';
+      osc.frequency.value = f;
+      osc.detune.value = (i - 1) * 5;
+      lp.type = 'lowpass';
+      lp.frequency.value = 900;
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.linearRampToValueAtTime(i === 0 ? 0.10 : 0.055, at + 1.6);
+      g.gain.setValueAtTime(i === 0 ? 0.10 : 0.055, at + PHRASE * BEAT - 1.4);
+      g.gain.linearRampToValueAtTime(0.0001, at + PHRASE * BEAT);
+      osc.connect(lp); lp.connect(g); g.connect(bedGain);
+      osc.start(at);
+      osc.stop(at + PHRASE * BEAT + 0.05);
+    });
+
+    // The horn line: each note a beat and a half, so the phrase breathes.
+    const line = cfg.horn;
+    line.forEach((step, i) => {
+      const t = at + i * BEAT * 1.18;
+      const f = degree(root, cfg.mode, step + (lift ? 2 : 0));
+      horn(c, f, t, BEAT * 1.5, i === 0 ? 0.085 : 0.062, bedGain);
+    });
+
+    // Drums mark the pulse, lightly, like a procession in the distance.
+    for (let i = 0; i < PHRASE; i += 2) {
+      drum(c, at + i * BEAT, i === 0 ? 0.16 : 0.075, bedGain);
+    }
+  }
+
+  /* Schedule phrases a little ahead of the clock, then let a timer top it up. */
+  function pumpScore() {
+    if (!ctx || !enabled || !scoreScene) return;
+    const horizon = ctx.currentTime + 2.5;
+    while (nextPhraseAt < horizon) {
+      schedulePhrase(ctx, scoreScene, nextPhraseAt);
+      nextPhraseAt += PHRASE * BEAT;
+      phraseIndex += 1;
+    }
+  }
+
   function bed(scene) {
     const c = ensure();
     if (!c) return;
+    const sameScene = scoreScene === scene && scoreTimer;
+    scoreScene = scene;
+    if (sameScene) return;
+
     stopBed();
-
-    const chords = {
-      'red-sea': [NOTE.A2, NOTE.C3, NOTE.E3, NOTE.A3],
-      'ark': [NOTE.D3, NOTE.F3, NOTE.A3, NOTE.C4],
-      'jericho': [NOTE.C3, NOTE.E3, NOTE.G3, NOTE.D4],
-      'elah': [NOTE.D3, NOTE.A3, NOTE.E4, NOTE.A4],
-      'carmel': [NOTE.A2, NOTE.E3, NOTE.A3, NOTE.C4],
-      'nineveh': [NOTE.C3, NOTE.G3, NOTE.D4, NOTE.E4],
-      'den': [NOTE.A2, NOTE.D3, NOTE.E3, NOTE.A3],
-      'jordan': [NOTE.C3, NOTE.E3, NOTE.G3, NOTE.C5],
-    };
-    const notes = chords[scene] || chords['red-sea'];
-
     bedGain.gain.cancelScheduledValues(c.currentTime);
     bedGain.gain.setValueAtTime(0.0001, c.currentTime);
-    bedGain.gain.linearRampToValueAtTime(0.075, c.currentTime + 2.4);
+    bedGain.gain.linearRampToValueAtTime(0.62, c.currentTime + 3.2);
 
-    notes.forEach((freq, i) => {
-      const osc = c.createOscillator();
-      const g = c.createGain();
-      const lfo = c.createOscillator();
-      const lfoGain = c.createGain();
-      const filter = c.createBiquadFilter();
+    phraseIndex = 0;
+    nextPhraseAt = c.currentTime + 0.35;
+    pumpScore();
 
-      osc.type = i === 0 ? 'sine' : 'triangle';
-      osc.frequency.value = freq;
-      osc.detune.value = (i - 1.5) * 4;
-
-      filter.type = 'lowpass';
-      filter.frequency.value = 720;
-      filter.Q.value = 0.6;
-
-      g.gain.value = i === 0 ? 0.24 : 0.1;
-
-      lfo.frequency.value = 0.055 + i * 0.021;
-      lfoGain.gain.value = 0.055;
-      lfo.connect(lfoGain);
-      lfoGain.connect(g.gain);
-
-      osc.connect(filter);
-      filter.connect(g);
-      g.connect(bedGain);
-      osc.start();
-      lfo.start();
-      bedNodes.push(osc, lfo);
-    });
+    clearInterval(scoreTimer);
+    scoreTimer = setInterval(pumpScore, 700);
   }
 
   function stopBed() {
     if (!ctx) return;
+    clearInterval(scoreTimer);
+    scoreTimer = null;
+    scoreScene = null;
+    bedGain.gain.cancelScheduledValues(ctx.currentTime);
     bedGain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.3);
     const nodes = bedNodes;
     bedNodes = [];
@@ -1951,6 +2190,95 @@ const Audio = (function () {
   return { resume, setEnabled, bed, stopBed, step, chime, thud, rumble };
 })();
 
+/* ---------- speech.js ---------- */
+/* ═══════════════════════════════════════════════════════════════════
+   SPEECH — read the question, the answers and the scripture aloud.
+
+   The Web Speech API is in every modern mobile browser, so this costs
+   nothing to ship and needs no network. Voices load asynchronously, so the
+   first call waits for them rather than silently doing nothing.
+   ═══════════════════════════════════════════════════════════════════ */
+
+const Speech = (function () {
+  const synth = window.speechSynthesis || null;
+  const supported = !!(synth && window.SpeechSynthesisUtterance);
+
+  let voice = null;
+  let enabled = true;
+  let current = null;
+
+  // A warmer narrator is a better fit than the default system voice. Prefer a
+  // known-good English voice, then any English one.
+  const PREFERRED = [
+    'Google UK English Male', 'Google US English', 'Daniel', 'Arthur',
+    'Microsoft Guy', 'Microsoft Ryan', 'Samantha', 'Karen', 'Moira',
+  ];
+
+  function pickVoice() {
+    if (!supported) return;
+    const voices = synth.getVoices() || [];
+    if (!voices.length) return;
+    const english = voices.filter((v) => /^en(-|_|$)/i.test(v.lang || ''));
+    const pool = english.length ? english : voices;
+    for (const name of PREFERRED) {
+      const hit = pool.find((v) => (v.name || '').indexOf(name) >= 0);
+      if (hit) { voice = hit; return; }
+    }
+    voice = pool.find((v) => v.localService) || pool[0];
+  }
+
+  if (supported) {
+    pickVoice();
+    synth.addEventListener('voiceschanged', pickVoice);
+    // Safari populates the list a beat after load
+    setTimeout(pickVoice, 600);
+  }
+
+  function stop() {
+    if (!supported) return;
+    try { synth.cancel(); } catch (e) { /* nothing speaking */ }
+  }
+
+  function speak(text, opts) {
+    if (!supported || !enabled || !text) return false;
+    const o = opts || {};
+    stop();
+    const u = new window.SpeechSynthesisUtterance(text);
+    if (voice) u.voice = voice;
+    u.lang = (voice && voice.lang) || 'en-GB';
+    u.rate = o.rate || 0.92;      // unhurried, like a reader at a lectern
+    u.pitch = o.pitch || 0.98;
+    u.volume = o.volume == null ? 1 : o.volume;
+    if (o.onend) u.onend = o.onend;
+    if (o.onstart) u.onstart = o.onstart;
+    if (o.onerror) u.onerror = o.onerror;
+    current = u;
+    synth.speak(u);
+    return true;
+  }
+
+  function speaking() {
+    return !!(supported && synth.speaking);
+  }
+
+  function setEnabled(on) {
+    enabled = !!on;
+    if (!on) stop();
+  }
+
+  function isEnabled() { return enabled; }
+
+  return {
+    supported,
+    speak,
+    stop,
+    speaking,
+    setEnabled,
+    isEnabled,
+    get voiceName() { return voice ? voice.name : ''; },
+  };
+})();
+
 /* ---------- scenes.js ---------- */
 /* ═══════════════════════════════════════════════════════════════════
    SCENES — procedural landscapes.
@@ -1975,9 +2303,23 @@ const Scenes = (function () {
   const HORIZON = 0.40;
   const FAR_Y = 0.70;
   const GROUND = 0.86;
-  const PILGRIM_X = 0.28;
+
+  // The walker starts at the right edge and crosses toward the destination,
+  // which stands a little left of centre. Everything is mirrored from the
+  // original layout, so the figure moves right-to-left across the screen the
+  // way a walker crossing the frame should.
+  // The road spans most of the screen, so a tap of progress is a stride you can
+  // actually see. The first gate sits a little right of centre, the second near
+  // the left, and the crossing ends at the far bank.
+  const START_X = 0.90;
+  const END_X = 0.15;
   const GATE_X = 0.52;
-  const AXIS_X = 0.74;
+  const AXIS_X = 0.26;
+
+  // The pilgrim's place on screen for a given amount of road covered.
+  function pilgrimX(progress) {
+    return lerp(START_X, END_X, clamp(progress, 0, 1));
+  }
 
   /* ── Deterministic RNG (mulberry32) ── */
   function rng(seed) {
@@ -2096,10 +2438,10 @@ const Scenes = (function () {
     rg.addColorStop(1, rgba(road, 0.075));
     ctx.fillStyle = rg;
     ctx.beginPath();
-    ctx.moveTo(w * PILGRIM_X - w * 0.045, h * (GROUND + 0.012));
-    ctx.lineTo(w * AXIS_X - w * 0.016, y0 + h * 0.012);
+    ctx.moveTo(w * START_X - w * 0.045, h * (GROUND + 0.012));
     ctx.lineTo(w * AXIS_X + w * 0.016, y0 + h * 0.012);
-    ctx.lineTo(w * PILGRIM_X + w * 0.11, h * (GROUND + 0.012));
+    ctx.lineTo(w * AXIS_X - w * 0.016, y0 + h * 0.012);
+    ctx.lineTo(w * END_X + w * 0.11, h * (GROUND + 0.012));
     ctx.closePath();
     ctx.fill();
   }
@@ -3066,7 +3408,9 @@ const Scenes = (function () {
     HORIZON: HORIZON,
     FAR_Y: FAR_Y,
     GROUND: GROUND,
-    PILGRIM_X: PILGRIM_X,
+    pilgrimX: pilgrimX,
+    START_X: START_X,
+    END_X: END_X,
     GATE_X: GATE_X,
     AXIS_X: AXIS_X,
     draw: function (ctx, w, h, stage, progress, miracle, time) {
@@ -3103,7 +3447,7 @@ const Engine = (function () {
 
   // Road covered by one tap, and how fast the pilgrim covers it. At 0.085 the
   // first gate (0.42) takes five taps, so the walk itself is part of the game.
-  const STRIDE = 0.085;
+  const STRIDE = 0.135;
   const WALK_SPEED = 0.20;
 
   const canvas = document.getElementById('stage');
@@ -3112,6 +3456,8 @@ const Engine = (function () {
   const state = {
     stage: null,
     progress: 0,
+    lift: 0,
+    liftTarget: 0,
     target: 0,
     walking: false,
     gatesPassed: [],
@@ -3160,8 +3506,10 @@ const Engine = (function () {
     const amp = walking ? 0.44 : 0;
     const nearThigh = amp * Math.sin(phase);
     const farThigh = amp * Math.sin(phase + Math.PI);
-    const nearKnee = walking ? 1.05 * Math.max(0, -Math.cos(phase)) : 0.05;
-    const farKnee = walking ? 1.05 * Math.max(0, -Math.cos(phase + Math.PI)) : 0.05;
+    // A knee bends while its leg travels forward. Bending it on the backward
+    // swing is what made the walk read as moonwalking.
+    const nearKnee = walking ? 1.05 * Math.max(0, Math.cos(phase)) : 0.05;
+    const farKnee = walking ? 1.05 * Math.max(0, Math.cos(phase + Math.PI)) : 0.05;
 
     // the body rises at mid-stance and drops at double support
     const bob = walking
@@ -3188,6 +3536,9 @@ const Engine = (function () {
 
     ctx.save();
     ctx.translate(cx, baseY + bob);
+    // The figure is authored facing right. He crosses the frame right-to-left,
+    // so mirror him or he walks backwards the whole way.
+    ctx.scale(-1, 1);
     ctx.rotate(lean * 0.35);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -3246,7 +3597,8 @@ const Engine = (function () {
     drawLeg(farJ, fig.cloak, -0.28, -0.20);
 
     /* ── Far arm, swinging opposite the far leg ───────────────── */
-    const armSwing = walking ? 0.36 * Math.sin(phase + Math.PI) : 0.05;
+    // The far arm swings with the near leg.
+    const armSwing = walking ? 0.36 * Math.sin(phase) : 0.05;
     const shX = s * 0.012;
     const shY = -s * 0.735;
     const upper = s * 0.155;
@@ -3382,11 +3734,19 @@ const Engine = (function () {
     ctx.closePath();
     ctx.fill();
 
-    // brow shadow
-    ctx.fillStyle = 'rgba(0,0,0,.13)';
+    // An eye and a brow. The old soft ellipse across the face read as a
+    // blindfold at phone size; a lit eye makes the profile read as a face.
+    ctx.fillStyle = 'rgba(38,26,18,.88)';
     ctx.beginPath();
-    ctx.ellipse(hx + hr * 0.46, hy - hr * 0.30, hr * 0.34, hr * 0.18, 0, 0, Math.PI * 2);
+    ctx.ellipse(hx + hr * 0.52, hy - hr * 0.10, hr * 0.115, hr * 0.085, -0.25, 0, Math.PI * 2);
     ctx.fill();
+
+    ctx.strokeStyle = 'rgba(58,42,30,.75)';
+    ctx.lineWidth = Math.max(0.7, s * 0.011);
+    ctx.beginPath();
+    ctx.moveTo(hx + hr * 0.26, hy - hr * 0.30);
+    ctx.quadraticCurveTo(hx + hr * 0.54, hy - hr * 0.40, hx + hr * 0.80, hy - hr * 0.28);
+    ctx.stroke();
 
     // hair: a close cap swept back from the brow
     const hg = ctx.createLinearGradient(hx - hr, hy - hr, hx + hr * 0.5, hy);
@@ -3405,9 +3765,10 @@ const Engine = (function () {
     /* ── Near arm, and the staff it carries ───────────────────── */
     // With a staff the arm is held out to the side, so the shaft stands clear of
     // the face instead of running up through it.
+    // The near arm swings with the far leg, so it opposes the near one.
     const nearSwing = fig.staff
       ? 0.52 + (walking ? 0.06 * Math.sin(phase) : 0)
-      : (walking ? 0.36 * Math.sin(phase) : 0.05);
+      : (walking ? 0.36 * Math.sin(phase + Math.PI) : 0.05);
     const nShX = s * 0.030;
     const nShY = -s * 0.732;
     const nElbowX = nShX + Math.sin(nearSwing) * upper;
@@ -3474,10 +3835,14 @@ const Engine = (function () {
     if (passed) return;
 
     const pulse = 0.5 + Math.sin(time * 1.7) * 0.5;
-    const x = w * Scenes.GATE_X;
+    // The gate stands on the road at the spot the walker reaches it. Offset
+    // left so he stops at its near edge instead of standing inside the mist.
     const bot = h * (Scenes.GROUND + 0.010);
     const rise = h * 0.26;
-    const halfW = w * 0.15;
+    const halfW = w * 0.10;
+    // The walker travels right to left, so the mist is set just ahead of him:
+    // its near edge meets the spot where he stops.
+    const x = w * Scenes.pilgrimX(gate.at) - halfW * 0.95;
 
     // A bank of luminous mist standing across the road. Built from soft radial
     // blobs rather than lines or a rectangle, so it has no edge to read as an
@@ -3616,7 +3981,7 @@ const Engine = (function () {
 
     state.time += dt;
 
-    if (state.walking) {
+    if (state.walking && !state.paused) {
       const before = state.progress;
       state.progress = Math.min(state.target, state.progress + dt * WALK_SPEED);
 
@@ -3629,7 +3994,7 @@ const Engine = (function () {
         }
         const groundY = h * Scenes.GROUND;
         if (Math.random() < (state.progress - before) * 22) {
-          spawnDust(w * Scenes.PILGRIM_X - 5 + Math.random() * 9, groundY - 1, stage.palette.land);
+          spawnDust(w * Scenes.pilgrimX(state.progress) + 4 + Math.random() * 9, groundY - 1, stage.palette.land);
         }
       }
 
@@ -3639,7 +4004,7 @@ const Engine = (function () {
       }
     }
 
-    if (state.miracleActive) {
+    if (state.miracleActive && !state.paused) {
       state.miracle = Math.min(1, state.miracle + dt * 0.44);
       const groundY = h * Scenes.GROUND;
       for (let i = 0; i < 2; i++) {
@@ -3651,9 +4016,17 @@ const Engine = (function () {
       }
     }
 
-    stepParticles(dt);
+    if (!state.paused) stepParticles(dt);
+
+    // The camera eases up when a question sheet covers the bottom of the scene,
+    // so the pilgrim and the gate stay in view while he is being asked.
+    state.lift += (state.liftTarget - state.lift) * Math.min(1, dt * 7);
+    const lift = state.lift;
 
     ctx.clearRect(0, 0, w, h);
+    ctx.save();
+    ctx.translate(0, -lift);
+
     Scenes.draw(ctx, w, h, stage, state.progress, state.miracle, state.time);
 
     const groundY = h * Scenes.GROUND;
@@ -3668,13 +4041,28 @@ const Engine = (function () {
     // all the walk-cycle work was invisible.
     const scale = Math.min(w, h) * 0.23;
     const phase = state.time * (state.walking ? 7.4 : 0.75);
-    drawPilgrim(w * Scenes.PILGRIM_X, groundY, scale, stage.figure, phase, state.walking, state.miracle);
+    const px = w * Scenes.pilgrimX(state.progress);
+    drawPilgrim(px, groundY, scale, stage.figure, phase, state.walking, state.miracle);
+    ctx.restore();
+
+    // The strip the camera uncovered: continue the last drawn row downward, so the
+    // ground runs to the bottom edge instead of ending in a flat band.
+    if (lift > 1) {
+      const srcY = Math.max(0, h - lift - 1);
+      try {
+        ctx.drawImage(canvas, 0, Math.round(srcY * state.dpr), canvas.width, 1,
+          0, srcY, w, lift + 1);
+      } catch (e) {
+        ctx.fillStyle = stage.palette.land;
+        ctx.fillRect(0, srcY, w, lift + 1);
+      }
+    }
 
     if (state.miracle > 0.02) {
       ctx.globalCompositeOperation = 'lighter';
       const g = ctx.createRadialGradient(
-        w * Scenes.PILGRIM_X, groundY - scale * 0.6, 0,
-        w * Scenes.PILGRIM_X, groundY - scale * 0.6, scale * 2.6
+        px, groundY - scale * 0.6, 0,
+        px, groundY - scale * 0.6, scale * 2.6
       );
       g.addColorStop(0, 'rgba(244,212,146,' + (0.14 * state.miracle) + ')');
       g.addColorStop(1, 'rgba(244,212,146,0)');
@@ -3689,7 +4077,9 @@ const Engine = (function () {
     if (!last) last = ts;
     const dt = Math.min(0.05, (ts - last) / 1000);
     last = ts;
-    if (!state.paused) render(dt);
+    // Keep painting while a card is open: the walk is frozen inside render(),
+    // but the camera still eases up so the pilgrim stays in view.
+    render(dt);
     raf = requestAnimationFrame(loop);
   }
 
@@ -3737,6 +4127,12 @@ const Engine = (function () {
     return false;
   }
 
+  /* When a question sheet covers the bottom of the scene, pull the ground line up
+     by that many CSS pixels so the pilgrim stays in view while he is being asked. */
+  function setLift(px) {
+    state.liftTarget = Math.max(0, px || 0);
+  }
+
   function passGate(i) { state.gatesPassed[i] = true; }
   function miracle() { state.miracleActive = true; }
   function pause(on) { state.paused = on; }
@@ -3763,6 +4159,7 @@ const Engine = (function () {
     init: init, load: load, walkTo: walkTo, stride: stride, passGate: passGate,
     miracle: miracle, reset: reset, pause: pause, nextGate: nextGate,
     get progress() { return state.progress; },
+    setLift: setLift,
     get walking() { return state.walking; },
     get miracleLevel() { return state.miracle; },
   };
@@ -4012,11 +4409,13 @@ const UI = (function () {
       nodes.appendChild(n);
     });
 
+    // The bar answers to the walk as well as to the answers: the current
+    // journey fills as the pilgrim covers the road, so every tap moves it.
     const done = STAGES.filter((_, i) => stageDone(i)).length;
-    const solvedNow = solvedFor(app.stageIndex).filter(Boolean).length;
-    const within = solvedNow / stage.gates.length;
-    const pct = ((done + (stageDone(app.stageIndex) ? 0 : within)) / STAGES.length) * 100;
+    const within = stageDone(app.stageIndex) ? 0 : Engine.progress;
+    const pct = ((done + within) / STAGES.length) * 100;
     $('track-fill').style.width = Scenes.clamp(pct, 2, 100) + '%';
+    $('track-pct').textContent = Math.round(pct) + '%';
 
     // streak
     $('streak-count').textContent = String(app.streak);
@@ -4123,19 +4522,47 @@ const UI = (function () {
     // one tap, one stride toward the gate
     Engine.stride(at);
     Audio.resume();
-    if (Engine.progress < 0.06) caption(stage.approach);
+
+    // The approach line is about arriving at the obstacle, so it comes up as he
+    // closes on the first gate, not on the very first tap.
+    const firstGate = stage.gates[0];
+    const near = Engine.progress >= firstGate.at - 0.30 && Engine.progress < firstGate.at - 0.005;
+    if (near) caption(stage.approach);
   }
 
   /* ═══════════════════════════════════════════════════════════════
      Question card
      ═══════════════════════════════════════════════════════════════ */
   function showCard(which) {
+    Speech.stop();
+    clearSpeaking();
     $('question-overlay').hidden = which !== 'question';
     $('complete-overlay').hidden = which !== 'complete';
+    // the card says everything the caption would, and the overlay dims it anyway
+    $('caption').classList.toggle('gone', !!which);
+    frameForCard(which);
   }
+
   function hideCard(which) {
     if (which === 'question') $('question-overlay').hidden = true;
     if (which === 'complete') $('complete-overlay').hidden = true;
+    frameForCard(null);
+  }
+
+  /* A question sheet covers the lower half of the scene, right where the pilgrim
+     stands. Ask the camera to lift by whatever the sheet actually occupies, so he
+     stays in sight while he is being asked. */
+  function frameForCard(which) {
+    if (!which) { Engine.setLift(0); return; }
+    const overlay = $(which + '-overlay');
+    const card = overlay && overlay.querySelector('.card');
+    if (!card) { Engine.setLift(0); return; }
+    const stage = $('stage');
+    const sceneRect = stage.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const covered = Math.max(0, sceneRect.bottom - cardRect.top);
+    // leave a little headroom so his head is never on the card's edge
+    Engine.setLift(Math.min(covered + 10, sceneRect.height * 0.55));
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -4170,6 +4597,55 @@ const UI = (function () {
     return order;
   }
 
+  const SPEAKER_SVG =
+    '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path d="M11 5L6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 010 7" />' +
+    '</svg>';
+
+  /* Read something aloud and light up the button that asked for it. One helper
+     for every speaker on the card, so the playing state is always in step. */
+  let speakingEl = null;
+
+  function clearSpeaking() {
+    if (speakingEl) speakingEl.classList.remove('playing');
+    speakingEl = null;
+  }
+
+  function sayAloud(text, el) {
+    if (!Speech.supported) {
+      toast('This browser cannot read aloud.');
+      return;
+    }
+    // tapping the speaker again stops it
+    if (speakingEl === el && Speech.speaking()) {
+      Speech.stop();
+      clearSpeaking();
+      return;
+    }
+    clearSpeaking();
+    if (!text) return;
+    speakingEl = el || null;
+    if (el) el.classList.add('playing');
+    Speech.speak(text, { onend: clearSpeaking, onerror: clearSpeaking });
+  }
+
+  function plainText(html) {
+    const d = document.createElement('div');
+    d.innerHTML = html;
+    return (d.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+
+  /* The whole question, read the way a reader would: reference, question,
+     then each answer lettered in turn. */
+  function narrationFor(gate, stage) {
+    const letters = ['A', 'B', 'C', 'D'];
+    const parts = [stage.ref + '. ' + gate.prompt];
+    app.order.forEach((source, slot) => {
+      parts.push(letters[slot] + '. ' + gate.options[source]);
+    });
+    return parts.join(' ');
+  }
+
   function openQuestion(gateIndex) {
     const stage = STAGES[app.stageIndex];
     const gate = stage.gates[gateIndex];
@@ -4200,8 +4676,27 @@ const UI = (function () {
       const label = document.createElement('span');
       label.className = 'opt-text';
       label.textContent = gate.options[source];
+
+      // A speaker on the row itself: read just this answer, so a player can
+      // hear the choices one at a time instead of the whole card.
+      const say = document.createElement('span');
+      say.className = 'hear-mini';
+      say.setAttribute('role', 'button');
+      say.setAttribute('tabindex', '0');
+      say.setAttribute('aria-label', 'Read this answer aloud');
+      say.innerHTML = SPEAKER_SVG;
+      const speakOption = (e) => {
+        e.stopPropagation();
+        sayAloud(label.textContent, say);
+      };
+      say.addEventListener('click', speakOption);
+      say.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); speakOption(e); }
+      });
+
       btn.appendChild(key);
       btn.appendChild(label);
+      btn.appendChild(say);
       btn.addEventListener('click', () => answer(source, gate, btn));
       opts.appendChild(btn);
     });
@@ -4209,6 +4704,10 @@ const UI = (function () {
     $('q-feedback').hidden = true;
     $('q-feedback').className = 'feedback';
     $('q-foot').hidden = true;
+
+    // the card-level speaker reads reference, question and every answer
+    const hear = $('q-hear');
+    hear.onclick = () => sayAloud(narrationFor(gate, stage), hear);
 
     showCard('question');
     $('q-prompt').scrollIntoView({ block: 'nearest' });
@@ -4243,6 +4742,11 @@ const UI = (function () {
         'The way opens. <em>' + gate.verse + '</em> — tap to read it in the Bible.';
       $('q-verse-btn').onclick = () => openVerse(gate.verse);
 
+      const fbHear = $('q-feedback-hear');
+      const fbWords = 'The way opens. ' + gate.verse + '.';
+      fbHear.onclick = () => sayAloud(fbWords, fbHear);
+      sayAloud(fbWords, fbHear);
+
       $('q-foot').hidden = false;
       $('q-next-btn').textContent = 'Walk on';
       $('q-next-btn').onclick = () => resolveGate(gate, app.gateIndex);
@@ -4262,6 +4766,11 @@ const UI = (function () {
       fb.hidden = false;
       $('q-feedback-text').innerHTML = gate.wrong;
       $('q-verse-btn').onclick = () => openVerse(gate.verse);
+
+      const fbHear = $('q-feedback-hear');
+      const fbWords = plainText(gate.wrong);
+      fbHear.onclick = () => sayAloud(fbWords, fbHear);
+
       paintHud();
       save();
     }

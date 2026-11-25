@@ -21,9 +21,23 @@ const Scenes = (function () {
   const HORIZON = 0.40;
   const FAR_Y = 0.70;
   const GROUND = 0.86;
-  const PILGRIM_X = 0.28;
+
+  // The walker starts at the right edge and crosses toward the destination,
+  // which stands a little left of centre. Everything is mirrored from the
+  // original layout, so the figure moves right-to-left across the screen the
+  // way a walker crossing the frame should.
+  // The road spans most of the screen, so a tap of progress is a stride you can
+  // actually see. The first gate sits a little right of centre, the second near
+  // the left, and the crossing ends at the far bank.
+  const START_X = 0.90;
+  const END_X = 0.15;
   const GATE_X = 0.52;
-  const AXIS_X = 0.74;
+  const AXIS_X = 0.26;
+
+  // The pilgrim's place on screen for a given amount of road covered.
+  function pilgrimX(progress) {
+    return lerp(START_X, END_X, clamp(progress, 0, 1));
+  }
 
   /* ── Deterministic RNG (mulberry32) ── */
   function rng(seed) {
@@ -142,10 +156,10 @@ const Scenes = (function () {
     rg.addColorStop(1, rgba(road, 0.075));
     ctx.fillStyle = rg;
     ctx.beginPath();
-    ctx.moveTo(w * PILGRIM_X - w * 0.045, h * (GROUND + 0.012));
-    ctx.lineTo(w * AXIS_X - w * 0.016, y0 + h * 0.012);
+    ctx.moveTo(w * START_X - w * 0.045, h * (GROUND + 0.012));
     ctx.lineTo(w * AXIS_X + w * 0.016, y0 + h * 0.012);
-    ctx.lineTo(w * PILGRIM_X + w * 0.11, h * (GROUND + 0.012));
+    ctx.lineTo(w * AXIS_X - w * 0.016, y0 + h * 0.012);
+    ctx.lineTo(w * END_X + w * 0.11, h * (GROUND + 0.012));
     ctx.closePath();
     ctx.fill();
   }
@@ -1112,7 +1126,9 @@ const Scenes = (function () {
     HORIZON: HORIZON,
     FAR_Y: FAR_Y,
     GROUND: GROUND,
-    PILGRIM_X: PILGRIM_X,
+    pilgrimX: pilgrimX,
+    START_X: START_X,
+    END_X: END_X,
     GATE_X: GATE_X,
     AXIS_X: AXIS_X,
     draw: function (ctx, w, h, stage, progress, miracle, time) {

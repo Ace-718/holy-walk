@@ -41,9 +41,12 @@
   </header>
 
   <!-- ══ Path track ══ -->
-  <div class="track" id="track" aria-hidden="true">
-    <div class="track-rail"><div class="track-fill" id="track-fill"></div></div>
-    <div class="track-nodes" id="track-nodes"></div>
+  <div class="track" id="track">
+    <div class="track-rail">
+      <div class="track-fill" id="track-fill"></div>
+      <div class="track-nodes" id="track-nodes"></div>
+    </div>
+    <span class="track-pct" id="track-pct" aria-live="polite">0%</span>
   </div>
 
   <!-- ══ Scene ══ -->
@@ -84,10 +87,25 @@
           <span class="eyebrow" id="q-ref">Exodus 14</span>
           <h2 class="q-prompt" id="q-prompt">Loading…</h2>
         </div>
+        <button class="hear-btn" id="q-hear" type="button" aria-label="Read the question and answers aloud">
+          <svg class="ico-speaker" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M11 5L6 9H3v6h3l5 4z" />
+            <path d="M15.5 8.5a5 5 0 010 7M18.5 6a9 9 0 010 12" />
+          </svg>
+          <svg class="ico-stop" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="7" y="7" width="10" height="10" rx="2" />
+          </svg>
+          <span class="hear-label">Hear it</span>
+        </button>
       </div>
       <div class="options" id="q-options" role="group" aria-labelledby="q-prompt"></div>
       <div class="feedback" id="q-feedback" hidden>
-        <p id="q-feedback-text"></p>
+        <div class="feedback-row">
+          <p id="q-feedback-text"></p>
+          <button class="hear-mini" id="q-feedback-hear" type="button" aria-label="Read the feedback aloud">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 010 7" /></svg>
+          </button>
+        </div>
         <button class="link-btn" id="q-verse-btn">
           <span>Read the verse</span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M12.5 6l6 6-6 6" /></svg>

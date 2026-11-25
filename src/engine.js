@@ -11,7 +11,7 @@ const Engine = (function () {
 
   // Road covered by one tap, and how fast the pilgrim covers it. At 0.085 the
   // first gate (0.42) takes five taps, so the walk itself is part of the game.
-  const STRIDE = 0.085;
+  const STRIDE = 0.135;
   const WALK_SPEED = 0.20;
 
   const canvas = document.getElementById('stage');
@@ -20,6 +20,8 @@ const Engine = (function () {
   const state = {
     stage: null,
     progress: 0,
+    lift: 0,
+    liftTarget: 0,
     target: 0,
     walking: false,
     gatesPassed: [],
@@ -68,8 +70,10 @@ const Engine = (function () {
     const amp = walking ? 0.44 : 0;
     const nearThigh = amp * Math.sin(phase);
     const farThigh = amp * Math.sin(phase + Math.PI);
-    const nearKnee = walking ? 1.05 * Math.max(0, -Math.cos(phase)) : 0.05;
-    const farKnee = walking ? 1.05 * Math.max(0, -Math.cos(phase + Math.PI)) : 0.05;
+    // A knee bends while its leg travels forward. Bending it on the backward
+    // swing is what made the walk read as moonwalking.
+    const nearKnee = walking ? 1.05 * Math.max(0, Math.cos(phase)) : 0.05;
+    const farKnee = walking ? 1.05 * Math.max(0, Math.cos(phase + Math.PI)) : 0.05;
 
     // the body rises at mid-stance and drops at double support
     const bob = walking
@@ -96,6 +100,9 @@ const Engine = (function () {
 
     ctx.save();
     ctx.translate(cx, baseY + bob);
+    // The figure is authored facing right. He crosses the frame right-to-left,
+    // so mirror him or he walks backwards the whole way.
+    ctx.scale(-1, 1);
     ctx.rotate(lean * 0.35);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -154,7 +161,8 @@ const Engine = (function () {
     drawLeg(farJ, fig.cloak, -0.28, -0.20);
 
     /* ── Far arm, swinging opposite the far leg ───────────────── */
-    const armSwing = walking ? 0.36 * Math.sin(phase + Math.PI) : 0.05;
+    // The far arm swings with the near leg.
+    const armSwing = walking ? 0.36 * Math.sin(phase) : 0.05;
     const shX = s * 0.012;
     const shY = -s * 0.735;
     const upper = s * 0.155;
@@ -290,11 +298,19 @@ const Engine = (function () {
     ctx.closePath();
     ctx.fill();
 
-    // brow shadow
-    ctx.fillStyle = 'rgba(0,0,0,.13)';
+    // An eye and a brow. The old soft ellipse across the face read as a
+    // blindfold at phone size; a lit eye makes the profile read as a face.
+    ctx.fillStyle = 'rgba(38,26,18,.88)';
     ctx.beginPath();
-    ctx.ellipse(hx + hr * 0.46, hy - hr * 0.30, hr * 0.34, hr * 0.18, 0, 0, Math.PI * 2);
+    ctx.ellipse(hx + hr * 0.52, hy - hr * 0.10, hr * 0.115, hr * 0.085, -0.25, 0, Math.PI * 2);
     ctx.fill();
+
+    ctx.strokeStyle = 'rgba(58,42,30,.75)';
+    ctx.lineWidth = Math.max(0.7, s * 0.011);
+    ctx.beginPath();
+    ctx.moveTo(hx + hr * 0.26, hy - hr * 0.30);
+    ctx.quadraticCurveTo(hx + hr * 0.54, hy - hr * 0.40, hx + hr * 0.80, hy - hr * 0.28);
+    ctx.stroke();
 
     // hair: a close cap swept back from the brow
     const hg = ctx.createLinearGradient(hx - hr, hy - hr, hx + hr * 0.5, hy);
@@ -313,9 +329,10 @@ const Engine = (function () {
     /* ── Near arm, and the staff it carries ───────────────────── */
     // With a staff the arm is held out to the side, so the shaft stands clear of
     // the face instead of running up through it.
+    // The near arm swings with the far leg, so it opposes the near one.
     const nearSwing = fig.staff
       ? 0.52 + (walking ? 0.06 * Math.sin(phase) : 0)
-      : (walking ? 0.36 * Math.sin(phase) : 0.05);
+      : (walking ? 0.36 * Math.sin(phase + Math.PI) : 0.05);
     const nShX = s * 0.030;
     const nShY = -s * 0.732;
     const nElbowX = nShX + Math.sin(nearSwing) * upper;
@@ -382,10 +399,14 @@ const Engine = (function () {
     if (passed) return;
 
     const pulse = 0.5 + Math.sin(time * 1.7) * 0.5;
-    const x = w * Scenes.GATE_X;
+    // The gate stands on the road at the spot the walker reaches it. Offset
+    // left so he stops at its near edge instead of standing inside the mist.
     const bot = h * (Scenes.GROUND + 0.010);
     const rise = h * 0.26;
-    const halfW = w * 0.15;
+    const halfW = w * 0.10;
+    // The walker travels right to left, so the mist is set just ahead of him:
+    // its near edge meets the spot where he stops.
+    const x = w * Scenes.pilgrimX(gate.at) - halfW * 0.95;
 
     // A bank of luminous mist standing across the road. Built from soft radial
     // blobs rather than lines or a rectangle, so it has no edge to read as an
@@ -524,7 +545,7 @@ const Engine = (function () {
 
     state.time += dt;
 
-    if (state.walking) {
+    if (state.walking && !state.paused) {
       const before = state.progress;
       state.progress = Math.min(state.target, state.progress + dt * WALK_SPEED);
 
@@ -537,7 +558,7 @@ const Engine = (function () {
         }
         const groundY = h * Scenes.GROUND;
         if (Math.random() < (state.progress - before) * 22) {
-          spawnDust(w * Scenes.PILGRIM_X - 5 + Math.random() * 9, groundY - 1, stage.palette.land);
+          spawnDust(w * Scenes.pilgrimX(state.progress) + 4 + Math.random() * 9, groundY - 1, stage.palette.land);
         }
       }
 
@@ -547,7 +568,7 @@ const Engine = (function () {
       }
     }
 
-    if (state.miracleActive) {
+    if (state.miracleActive && !state.paused) {
       state.miracle = Math.min(1, state.miracle + dt * 0.44);
       const groundY = h * Scenes.GROUND;
       for (let i = 0; i < 2; i++) {
@@ -559,9 +580,17 @@ const Engine = (function () {
       }
     }
 
-    stepParticles(dt);
+    if (!state.paused) stepParticles(dt);
+
+    // The camera eases up when a question sheet covers the bottom of the scene,
+    // so the pilgrim and the gate stay in view while he is being asked.
+    state.lift += (state.liftTarget - state.lift) * Math.min(1, dt * 7);
+    const lift = state.lift;
 
     ctx.clearRect(0, 0, w, h);
+    ctx.save();
+    ctx.translate(0, -lift);
+
     Scenes.draw(ctx, w, h, stage, state.progress, state.miracle, state.time);
 
     const groundY = h * Scenes.GROUND;
@@ -576,13 +605,28 @@ const Engine = (function () {
     // all the walk-cycle work was invisible.
     const scale = Math.min(w, h) * 0.23;
     const phase = state.time * (state.walking ? 7.4 : 0.75);
-    drawPilgrim(w * Scenes.PILGRIM_X, groundY, scale, stage.figure, phase, state.walking, state.miracle);
+    const px = w * Scenes.pilgrimX(state.progress);
+    drawPilgrim(px, groundY, scale, stage.figure, phase, state.walking, state.miracle);
+    ctx.restore();
+
+    // The strip the camera uncovered: continue the last drawn row downward, so the
+    // ground runs to the bottom edge instead of ending in a flat band.
+    if (lift > 1) {
+      const srcY = Math.max(0, h - lift - 1);
+      try {
+        ctx.drawImage(canvas, 0, Math.round(srcY * state.dpr), canvas.width, 1,
+          0, srcY, w, lift + 1);
+      } catch (e) {
+        ctx.fillStyle = stage.palette.land;
+        ctx.fillRect(0, srcY, w, lift + 1);
+      }
+    }
 
     if (state.miracle > 0.02) {
       ctx.globalCompositeOperation = 'lighter';
       const g = ctx.createRadialGradient(
-        w * Scenes.PILGRIM_X, groundY - scale * 0.6, 0,
-        w * Scenes.PILGRIM_X, groundY - scale * 0.6, scale * 2.6
+        px, groundY - scale * 0.6, 0,
+        px, groundY - scale * 0.6, scale * 2.6
       );
       g.addColorStop(0, 'rgba(244,212,146,' + (0.14 * state.miracle) + ')');
       g.addColorStop(1, 'rgba(244,212,146,0)');
@@ -597,7 +641,9 @@ const Engine = (function () {
     if (!last) last = ts;
     const dt = Math.min(0.05, (ts - last) / 1000);
     last = ts;
-    if (!state.paused) render(dt);
+    // Keep painting while a card is open: the walk is frozen inside render(),
+    // but the camera still eases up so the pilgrim stays in view.
+    render(dt);
     raf = requestAnimationFrame(loop);
   }
 
@@ -645,6 +691,12 @@ const Engine = (function () {
     return false;
   }
 
+  /* When a question sheet covers the bottom of the scene, pull the ground line up
+     by that many CSS pixels so the pilgrim stays in view while he is being asked. */
+  function setLift(px) {
+    state.liftTarget = Math.max(0, px || 0);
+  }
+
   function passGate(i) { state.gatesPassed[i] = true; }
   function miracle() { state.miracleActive = true; }
   function pause(on) { state.paused = on; }
@@ -671,6 +723,7 @@ const Engine = (function () {
     init: init, load: load, walkTo: walkTo, stride: stride, passGate: passGate,
     miracle: miracle, reset: reset, pause: pause, nextGate: nextGate,
     get progress() { return state.progress; },
+    setLift: setLift,
     get walking() { return state.walking; },
     get miracleLevel() { return state.miracle; },
   };

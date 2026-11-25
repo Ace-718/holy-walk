@@ -101,11 +101,13 @@ const UI = (function () {
       nodes.appendChild(n);
     });
 
+    // The bar answers to the walk as well as to the answers: the current
+    // journey fills as the pilgrim covers the road, so every tap moves it.
     const done = STAGES.filter((_, i) => stageDone(i)).length;
-    const solvedNow = solvedFor(app.stageIndex).filter(Boolean).length;
-    const within = solvedNow / stage.gates.length;
-    const pct = ((done + (stageDone(app.stageIndex) ? 0 : within)) / STAGES.length) * 100;
+    const within = stageDone(app.stageIndex) ? 0 : Engine.progress;
+    const pct = ((done + within) / STAGES.length) * 100;
     $('track-fill').style.width = Scenes.clamp(pct, 2, 100) + '%';
+    $('track-pct').textContent = Math.round(pct) + '%';
 
     // streak
     $('streak-count').textContent = String(app.streak);
@@ -212,19 +214,47 @@ const UI = (function () {
     // one tap, one stride toward the gate
     Engine.stride(at);
     Audio.resume();
-    if (Engine.progress < 0.06) caption(stage.approach);
+
+    // The approach line is about arriving at the obstacle, so it comes up as he
+    // closes on the first gate, not on the very first tap.
+    const firstGate = stage.gates[0];
+    const near = Engine.progress >= firstGate.at - 0.30 && Engine.progress < firstGate.at - 0.005;
+    if (near) caption(stage.approach);
   }
 
   /* ═══════════════════════════════════════════════════════════════
      Question card
      ═══════════════════════════════════════════════════════════════ */
   function showCard(which) {
+    Speech.stop();
+    clearSpeaking();
     $('question-overlay').hidden = which !== 'question';
     $('complete-overlay').hidden = which !== 'complete';
+    // the card says everything the caption would, and the overlay dims it anyway
+    $('caption').classList.toggle('gone', !!which);
+    frameForCard(which);
   }
+
   function hideCard(which) {
     if (which === 'question') $('question-overlay').hidden = true;
     if (which === 'complete') $('complete-overlay').hidden = true;
+    frameForCard(null);
+  }
+
+  /* A question sheet covers the lower half of the scene, right where the pilgrim
+     stands. Ask the camera to lift by whatever the sheet actually occupies, so he
+     stays in sight while he is being asked. */
+  function frameForCard(which) {
+    if (!which) { Engine.setLift(0); return; }
+    const overlay = $(which + '-overlay');
+    const card = overlay && overlay.querySelector('.card');
+    if (!card) { Engine.setLift(0); return; }
+    const stage = $('stage');
+    const sceneRect = stage.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const covered = Math.max(0, sceneRect.bottom - cardRect.top);
+    // leave a little headroom so his head is never on the card's edge
+    Engine.setLift(Math.min(covered + 10, sceneRect.height * 0.55));
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -259,6 +289,55 @@ const UI = (function () {
     return order;
   }
 
+  const SPEAKER_SVG =
+    '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path d="M11 5L6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 010 7" />' +
+    '</svg>';
+
+  /* Read something aloud and light up the button that asked for it. One helper
+     for every speaker on the card, so the playing state is always in step. */
+  let speakingEl = null;
+
+  function clearSpeaking() {
+    if (speakingEl) speakingEl.classList.remove('playing');
+    speakingEl = null;
+  }
+
+  function sayAloud(text, el) {
+    if (!Speech.supported) {
+      toast('This browser cannot read aloud.');
+      return;
+    }
+    // tapping the speaker again stops it
+    if (speakingEl === el && Speech.speaking()) {
+      Speech.stop();
+      clearSpeaking();
+      return;
+    }
+    clearSpeaking();
+    if (!text) return;
+    speakingEl = el || null;
+    if (el) el.classList.add('playing');
+    Speech.speak(text, { onend: clearSpeaking, onerror: clearSpeaking });
+  }
+
+  function plainText(html) {
+    const d = document.createElement('div');
+    d.innerHTML = html;
+    return (d.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+
+  /* The whole question, read the way a reader would: reference, question,
+     then each answer lettered in turn. */
+  function narrationFor(gate, stage) {
+    const letters = ['A', 'B', 'C', 'D'];
+    const parts = [stage.ref + '. ' + gate.prompt];
+    app.order.forEach((source, slot) => {
+      parts.push(letters[slot] + '. ' + gate.options[source]);
+    });
+    return parts.join(' ');
+  }
+
   function openQuestion(gateIndex) {
     const stage = STAGES[app.stageIndex];
     const gate = stage.gates[gateIndex];
@@ -289,8 +368,27 @@ const UI = (function () {
       const label = document.createElement('span');
       label.className = 'opt-text';
       label.textContent = gate.options[source];
+
+      // A speaker on the row itself: read just this answer, so a player can
+      // hear the choices one at a time instead of the whole card.
+      const say = document.createElement('span');
+      say.className = 'hear-mini';
+      say.setAttribute('role', 'button');
+      say.setAttribute('tabindex', '0');
+      say.setAttribute('aria-label', 'Read this answer aloud');
+      say.innerHTML = SPEAKER_SVG;
+      const speakOption = (e) => {
+        e.stopPropagation();
+        sayAloud(label.textContent, say);
+      };
+      say.addEventListener('click', speakOption);
+      say.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); speakOption(e); }
+      });
+
       btn.appendChild(key);
       btn.appendChild(label);
+      btn.appendChild(say);
       btn.addEventListener('click', () => answer(source, gate, btn));
       opts.appendChild(btn);
     });
@@ -298,6 +396,10 @@ const UI = (function () {
     $('q-feedback').hidden = true;
     $('q-feedback').className = 'feedback';
     $('q-foot').hidden = true;
+
+    // the card-level speaker reads reference, question and every answer
+    const hear = $('q-hear');
+    hear.onclick = () => sayAloud(narrationFor(gate, stage), hear);
 
     showCard('question');
     $('q-prompt').scrollIntoView({ block: 'nearest' });
@@ -332,6 +434,11 @@ const UI = (function () {
         'The way opens. <em>' + gate.verse + '</em> — tap to read it in the Bible.';
       $('q-verse-btn').onclick = () => openVerse(gate.verse);
 
+      const fbHear = $('q-feedback-hear');
+      const fbWords = 'The way opens. ' + gate.verse + '.';
+      fbHear.onclick = () => sayAloud(fbWords, fbHear);
+      sayAloud(fbWords, fbHear);
+
       $('q-foot').hidden = false;
       $('q-next-btn').textContent = 'Walk on';
       $('q-next-btn').onclick = () => resolveGate(gate, app.gateIndex);
@@ -351,6 +458,11 @@ const UI = (function () {
       fb.hidden = false;
       $('q-feedback-text').innerHTML = gate.wrong;
       $('q-verse-btn').onclick = () => openVerse(gate.verse);
+
+      const fbHear = $('q-feedback-hear');
+      const fbWords = plainText(gate.wrong);
+      fbHear.onclick = () => sayAloud(fbWords, fbHear);
+
       paintHud();
       save();
     }
