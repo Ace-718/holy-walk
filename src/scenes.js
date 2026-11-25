@@ -131,24 +131,33 @@ const Scenes = (function () {
 
     // the bank's top edge stays below the waterline, so the sea is never cut
     // by a hard diagonal at the edge of the frame
+    const bankPath = function () {
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+      ctx.lineTo(0, y0 + h * 0.024);
+      ctx.bezierCurveTo(w * 0.3, y0 + h * 0.006, w * 0.66, y0 + h * 0.026, w, y0 + h * 0.012);
+      ctx.lineTo(w, h);
+      ctx.closePath();
+    };
+
     const g = ctx.createLinearGradient(0, y0, 0, h);
     g.addColorStop(0, top);
     g.addColorStop(1, bottom);
     ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(0, h);
-    ctx.lineTo(0, y0 + h * 0.024);
-    ctx.bezierCurveTo(w * 0.3, y0 + h * 0.006, w * 0.66, y0 + h * 0.026, w, y0 + h * 0.012);
-    ctx.lineTo(w, h);
-    ctx.closePath();
+    bankPath();
     ctx.fill();
 
-    // a soft band of shadow where the bank meets the water
+    // A soft band of shadow where the bank meets the water, clipped to the bank so
+    // it never darkens the strip of ground above its top edge.
+    ctx.save();
+    bankPath();
+    ctx.clip();
     const shade = ctx.createLinearGradient(0, y0, 0, y0 + h * 0.05);
     shade.addColorStop(0, 'rgba(0,0,0,.22)');
     shade.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = shade;
     ctx.fillRect(0, y0, w, h * 0.05);
+    ctx.restore();
 
     if (!road) return;
     const rg = ctx.createLinearGradient(0, y0, 0, h);
@@ -272,9 +281,13 @@ const Scenes = (function () {
       const halfTop = w * 0.003 + w * 0.008 * open;
       const halfBot = w * 0.003 + w * 0.10 * open;
 
+      // The dry corridor: sand, darker and cooler with distance. A hard-edged
+      // gradient here read as a tent pitched in the sea, so the bed is warm near
+      // the viewer and broken up with grit and a wet sheen along the wall feet.
       const floor = ctx.createLinearGradient(0, seaTop, 0, farY);
-      floor.addColorStop(0, 'rgba(88,72,52,.92)');
-      floor.addColorStop(1, 'rgba(50,40,30,.98)');
+      floor.addColorStop(0, 'rgba(74,62,48,.96)');
+      floor.addColorStop(0.55, 'rgba(96,80,60,.97)');
+      floor.addColorStop(1, 'rgba(122,102,76,.98)');
       ctx.fillStyle = floor;
       ctx.beginPath();
       ctx.moveTo(axis - halfTop, seaTop);
@@ -283,6 +296,37 @@ const Scenes = (function () {
       ctx.lineTo(axis - halfBot, farY);
       ctx.closePath();
       ctx.fill();
+
+      // grit and pebbles on the bed, denser and larger toward the viewer
+      const gr = rng(417);
+      for (let i = 0; i < 90; i++) {
+        const f = Math.pow(gr(), 0.55);
+        const y = lerp(seaTop, farY, f);
+        const half = lerp(halfTop, halfBot, f);
+        const x = axis + (gr() * 2 - 1) * half * 0.94;
+        const rr = (0.5 + gr() * 1.9) * (0.4 + f * 0.9) * open;
+        ctx.fillStyle = gr() > 0.5
+          ? 'rgba(38,30,22,' + (0.34 * open) + ')'
+          : 'rgba(196,172,132,' + (0.20 * open) + ')';
+        ctx.beginPath();
+        ctx.ellipse(x, y, rr, rr * 0.55, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // damp shadow where each wall meets the bed
+      [-1, 1].forEach(function (side) {
+        const edge = ctx.createLinearGradient(axis + side * halfBot * 0.62, 0, axis + side * halfBot, 0);
+        edge.addColorStop(0, 'rgba(18,32,44,0)');
+        edge.addColorStop(1, 'rgba(18,32,44,.55)');
+        ctx.fillStyle = edge;
+        ctx.beginPath();
+        ctx.moveTo(axis + side * halfTop * 0.62, seaTop);
+        ctx.lineTo(axis + side * halfTop, seaTop);
+        ctx.lineTo(axis + side * halfBot, farY);
+        ctx.lineTo(axis + side * halfBot * 0.62, farY);
+        ctx.closePath();
+        ctx.fill();
+      });
 
       const sheen = ctx.createLinearGradient(0, seaTop, 0, farY);
       sheen.addColorStop(0, 'rgba(162,200,222,.22)');
@@ -321,21 +365,25 @@ const Scenes = (function () {
         wg.addColorStop(0.28, 'rgba(86,156,196,.76)');
         wg.addColorStop(0.72, 'rgba(44,104,142,.86)');
         wg.addColorStop(1, 'rgba(24,66,98,.92)');
+        // The heap of water reaches from the cut edge outward across the sea,
+        // tallest at the cut and settling back to the surface further out. Filling
+        // only a narrow strip here made the sea read as two painted columns.
+        // A wall, not a hill: the top stays near crest height across a short span
+        // and then drops steeply back into the sea at its outer shoulder.
+        const outerAt = function (k) { return face(0) + side * w * (0.012 + 0.15 * k); };
+        const outerY = function (k) {
+          const shoulder = 0.78;
+          if (k <= shoulder) return crestAt(0) + Math.sin(k * 9 + side) * h * 0.004 * open;
+          const q = (k - shoulder) / (1 - shoulder);
+          return lerp(crestAt(0), seaTop + h * 0.004, q * q);
+        };
+
         ctx.fillStyle = wg;
         ctx.beginPath();
         ctx.moveTo(face(1), farY);
-        for (let k = 1; k >= 0; k -= 0.05) {
-          const f = k;
-          ctx.lineTo(face(f), lerp(seaTop, crestAt(f), 1));
-        }
-        // across the top of the wall, away from the corridor: the wall stays
-        // tall as it recedes, with only a shallow undulation along the crest
-        const topY = crestAt(1);
-        for (let k = 0; k <= 1; k += 0.1) {
-          const undulate = Math.sin(k * 6 + side + t * 0.7) * h * 0.006 * open;
-          ctx.lineTo(face(k) + side * w * (0.018 + 0.062 * k), topY + undulate);
-        }
-        ctx.lineTo(face(1) + side * w * 0.08, farY);
+        for (let k = 1; k >= 0; k -= 0.04) ctx.lineTo(face(k), crestAt(k));
+        for (let k = 0; k <= 1; k += 0.04) ctx.lineTo(outerAt(k), outerY(k));
+        ctx.lineTo(outerAt(1), farY);
         ctx.closePath();
         ctx.fill();
 
@@ -1134,6 +1182,13 @@ const Scenes = (function () {
     draw: function (ctx, w, h, stage, progress, miracle, time) {
       const hy = h * HORIZON;
       sky(ctx, w, h, stage);
+
+      // Base land colour under everything below the horizon. Each scene paints its
+      // own ground, but their shapes do not always meet, and any sliver they leave
+      // bare showed the transparent canvas as a black seam.
+      ctx.fillStyle = stage.palette.land;
+      ctx.fillRect(0, hy - 1, w, h - hy + 1);
+
       const fn = DRAW[stage.scene] || redSea;
       fn(ctx, w, h, hy, progress, miracle, time);
 

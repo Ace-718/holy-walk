@@ -464,7 +464,10 @@ svg path, svg circle {
      room under the buttons for a thumb. */
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-bottom: 14px;
+  /* The card is a bottom sheet: it should meet the screen edge, otherwise the
+     Forward button underneath peeks out below it. The card's own padding already
+     clears the home indicator. */
+  padding-bottom: 0;
   /* Dim the scene a little so the card reads, but leave it sharp: a blur here
      turned the whole painting to fog and hid the gate the card is asking about. */
   background: linear-gradient(180deg, rgba(3, 5, 9, .05) 0%, rgba(3, 5, 9, .3) 46%, rgba(3, 5, 9, .6) 100%);
