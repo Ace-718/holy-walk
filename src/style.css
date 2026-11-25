@@ -32,6 +32,9 @@
 
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
+  /* HUD plus the progress rail. The rail deliberately sits above the question
+     card, so a card that starts at the top of the screen would slide under it. */
+  --chrome-h: 110px;
 
   --serif: 'Cormorant Garamond', 'Iowan Old Style', Palatino, Georgia, serif;
   --sans: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -563,8 +566,10 @@ svg path, svg circle {
 @media (min-width: 640px) {
   /* "safe" keeps the card centered when it fits, but falls back to the top edge
      when it is taller than the screen — a plain center hides the first line of a
-     long question in landscape, above the scrollable area. */
-  .overlay { justify-content: safe center; padding: 22px; }
+     long question in landscape, above the scrollable area. The top padding clears
+     the HUD and the progress rail, which sit above the card by design: without it
+     a tall card's heading slid underneath them. */
+  .overlay { justify-content: safe center; padding: calc(var(--chrome-h) + 14px) 22px 22px; }
   .card {
     border-radius: var(--r-xl);
     border-bottom: 1px solid rgba(217, 169, 78, .2);
@@ -578,6 +583,30 @@ svg path, svg circle {
 }
 
 .card-head { display: flex; gap: 12px; align-items: flex-start; }
+
+/* A phone on its side is wide and short. A single stacked column of question,
+   answers and buttons needs more height than there is, so the question takes the
+   left column and the answers the right, and the whole card fits without a
+   scroll. */
+@media (max-height: 560px) and (min-width: 640px) {
+  .overlay { padding: calc(var(--chrome-h) + 4px) 16px 8px; }
+  .question-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    column-gap: 20px;
+    max-width: 52rem;
+    padding: 16px 18px 14px;
+  }
+  .question-card .card-head { grid-column: 1; grid-row: 1; }
+  .question-card .options { grid-column: 2; grid-row: 1 / span 3; margin-top: 0; gap: 7px; }
+  .question-card .opt { padding: 10px 12px; }
+  .question-card .feedback { grid-column: 1; grid-row: 2; margin-top: 12px; }
+  /* The buttons share the answers' rows instead of adding a fourth one: on a
+     short screen that row is the difference between fitting and scrolling. */
+  .question-card .card-foot { grid-column: 1; grid-row: 3; margin-top: 12px; }
+  .question-card .q-prompt { font-size: 19px; }
+}
 .seal {
   display: grid;
   place-items: center;
