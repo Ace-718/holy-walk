@@ -19,6 +19,9 @@ const UI = (function () {
     busy: false,           // true while a card is up or walking
     complete: false,
     lastSlot: -1,          // slot the right answer used last, so it can move
+    // Set while a finished stage replays its arrival, so the completion card can
+    // be held back until the walk into the landmark is actually done.
+    awaitingArrival: false,
   };
 
   let bible = { tab: 'read', view: 'chapters', book: null, chapter: 1, highlight: 0 };
@@ -144,6 +147,7 @@ const UI = (function () {
     app.complete = false;
     app.busy = false;
     app.gateIndex = 0;
+    app.awaitingArrival = false;
 
     const stage = STAGES[i];
     Engine.load(stage);
@@ -174,11 +178,22 @@ const UI = (function () {
     hideCard('complete');
 
     if (stageDone(i) && !options.replay) {
-      Engine.walkTo(1);
-      Engine.miracle();
+      // He is already at the landmark, not at the far end of the road, so put him
+      // where the finale starts and let it carry him in. Walking to 1 first sent
+      // him past the ark and then dragged him back to it.
+      const fin = Scenes.finaleFor(stage.scene);
+      app.awaitingArrival = !!fin;
+      if (fin) {
+        Engine.placeAt(Scenes.progressAtX(fin.x));
+        Engine.miracle();
+        setTimeout(() => Engine.beginFinale(), 700);
+      } else {
+        Engine.walkTo(1);
+        Engine.miracle();
+      }
       app.complete = true;
       caption('This journey is already walked. Tap Forward to walk it again.', true);
-      setTimeout(() => showComplete(true), 1400);
+      if (!fin) setTimeout(() => showComplete(true), 2200);
     } else {
       caption(stage.intro);
     }
@@ -198,6 +213,8 @@ const UI = (function () {
 
   function step() {
     if (app.busy || app.complete) return;
+    // The finale walk is not steerable: he is already on his way in.
+    if (Engine.finaleT > 0) return;
     const stage = STAGES[app.stageIndex];
     const { at, gate } = forwardTarget();
 
@@ -483,14 +500,16 @@ const UI = (function () {
     const stage = STAGES[app.stageIndex];
     const allSolved = stage.gates.every((_, i) => solved[i]);
 
-    app.busy = false;
+    // On the last gate the rest of the stage is a cutscene: lock the controls so
+    // a tap cannot skip past the walk into the landmark.
+    app.busy = allSolved;
 
     if (allSolved) {
       caption(stage.miracle, true);
-      setTimeout(() => {
-        Engine.walkTo(1);
-        Engine.miracle();
-      }, 420);
+      // The miracle opens the way first; when it has finished, onMiracleDone
+      // sends him walking into it. Doing it in that order means he never walks
+      // through water that is still parting or a wall that is still falling.
+      setTimeout(() => Engine.miracle(), 420);
     } else {
       caption('The way is open. Walk on.');
     }
@@ -922,7 +941,17 @@ const UI = (function () {
         }
       },
       onMiracleDone: () => {
-        setTimeout(() => finishStage(), 500);
+        // The way is open. Now he walks into it. If a scene has no finale
+        // geometry, fall back to the old behaviour and finish the stage.
+        if (!Engine.beginFinale()) setTimeout(() => finishStage(), 700);
+      },
+      onFinaleDone: () => {
+        if (app.awaitingArrival) {
+          app.awaitingArrival = false;
+          setTimeout(() => showComplete(true), 500);
+          return;
+        }
+        setTimeout(() => finishStage(), 600);
       },
     });
 

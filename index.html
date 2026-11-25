@@ -2332,6 +2332,44 @@ const Scenes = (function () {
     return lerp(START_X, END_X, clamp(progress, 0, 1));
   }
 
+  // The inverse: how much road must be covered to stand at screen x. The finale
+  // uses it to stop the pilgrim at the landmark's foot instead of walking past it.
+  function progressAtX(x) {
+    return clamp((START_X - x) / (START_X - END_X), 0, 1);
+  }
+
+  /* ── The finale ──────────────────────────────────────────────
+     Once every gate is answered the pilgrim does not stop at the end of the
+     road: he walks into the thing the scene is about. Each scene says where
+     that threshold is (x), how far he rises toward it (rise, as a fraction of
+     the height), how much he shrinks walking away (shrink), how far he fades
+     as he passes inside (fade), and how long the whole walk takes (dur).
+
+     rise is measured from GROUND up toward the horizon, so a scene whose
+     landmark sits at FAR_Y needs about 0.16, and the Red Sea corridor — which
+     runs all the way to the far shore — needs a full 0.40.
+     ═══════════════════════════════════════════════════════════ */
+  const FINALE = {
+    // up the dry corridor, between the walls, to the far shore
+    'red-sea': { x: AXIS_X, rise: 0.400, shrink: 0.58, fade: 0.10, dur: 3.2 },
+    // through the open door of the ark, out of the rain
+    'ark': { x: AXIS_X, rise: 0.160, shrink: 0.66, fade: 1.00, dur: 2.8 },
+    // through the gap where the wall stood
+    'jericho': { x: AXIS_X, rise: 0.150, shrink: 0.36, fade: 0.70, dur: 2.4 },
+    'elah': { x: AXIS_X, rise: 0.150, shrink: 0.34, fade: 0.55, dur: 2.4 },
+    'carmel': { x: AXIS_X, rise: 0.150, shrink: 0.34, fade: 0.55, dur: 2.4 },
+    // across the water toward the city on the far bank
+    'nineveh': { x: 0.20, rise: 0.150, shrink: 0.40, fade: 0.60, dur: 2.8 },
+    // into the mouth of the den
+    'den': { x: AXIS_X, rise: 0.150, shrink: 0.38, fade: 0.80, dur: 2.4 },
+    // across the Jordan to the far bank
+    'jordan': { x: AXIS_X, rise: 0.150, shrink: 0.36, fade: 0.55, dur: 2.8 },
+  };
+
+  function finaleFor(scene) {
+    return FINALE[scene] || null;
+  }
+
   /* ── Deterministic RNG (mulberry32) ── */
   function rng(seed) {
     let a = seed >>> 0;
@@ -3183,7 +3221,9 @@ const Scenes = (function () {
     if (cityA > 0.02) {
       ctx.globalAlpha = cityA;
       const r = rng(131);
-      const bx = w * 0.86;
+      // The city sits on the far bank, ahead of the walker: he travels right to
+      // left, so Nineveh has to rise on the left or he would walk away from it.
+      const bx = w * 0.17;
       const by = hy + h * 0.01;
       for (let i = 0; i < 14; i++) {
         const bw = w * (0.016 + r() * 0.028);
@@ -3192,7 +3232,7 @@ const Scenes = (function () {
         bg.addColorStop(0, '#506472');
         bg.addColorStop(1, '#2b3943');
         ctx.fillStyle = bg;
-        ctx.fillRect(bx + (r() - 0.5) * w * 0.26, by - bh, bw, bh);
+        ctx.fillRect(bx + (r() - 0.5) * w * 0.22, by - bh, bw, bh);
       }
       ctx.globalAlpha = 1;
     }
@@ -3485,6 +3525,8 @@ const Scenes = (function () {
     FAR_Y: FAR_Y,
     GROUND: GROUND,
     pilgrimX: pilgrimX,
+    progressAtX: progressAtX,
+    finaleFor: finaleFor,
     START_X: START_X,
     END_X: END_X,
     GATE_X: GATE_X,
@@ -3552,6 +3594,11 @@ const Engine = (function () {
     dust: [],
     sparks: [],
     stepAcc: 0,
+    // The finale: 0 while he is still on the road, 1 once he is inside the
+    // landmark. `finale` holds the geometry for the current scene.
+    finale: null,
+    finaleT: 0,
+    finaleOn: false,
     w: 0, h: 0, dpr: 1,
   };
 
@@ -4099,6 +4146,16 @@ const Engine = (function () {
       }
     }
 
+    // The finale walk: the pilgrim leaves the road and goes into the landmark.
+    // It runs after the miracle has opened, so the way is clear before he moves.
+    if (state.finaleOn && !state.paused) {
+      state.finaleT = Math.min(1, state.finaleT + dt / state.finale.dur);
+      if (state.finaleT >= 1) {
+        state.finaleOn = false;
+        if (hooks.onFinaleDone) hooks.onFinaleDone();
+      }
+    }
+
     if (!state.paused) stepParticles(dt);
 
     // The camera eases up when a question sheet covers the bottom of the scene,
@@ -4123,9 +4180,34 @@ const Engine = (function () {
     // Big enough to read the gait on a phone. At 0.14 the figure was a speck and
     // all the walk-cycle work was invisible.
     const scale = Math.min(w, h) * 0.23;
-    const phase = state.time * (state.walking ? 7.4 : 0.75);
-    const px = w * Scenes.pilgrimX(state.progress);
-    drawPilgrim(px, groundY, scale, stage.figure, phase, state.walking, state.miracle);
+    // On the finale he is walking even though the road progress is not moving, so
+    // the gait has to be driven by the same flag the legs are drawn from.
+    const striding = state.walking || (state.finaleOn && state.finaleT > 0);
+    const phase = state.time * (striding ? 7.4 : 0.75);
+    let px = w * Scenes.pilgrimX(state.progress);
+    let py = groundY;
+    let pscale = scale;
+    let palpha = 1;
+
+    // On the finale he leaves the road: the walk takes him along the ground and
+    // up into the landmark at once, shrinking and fading as he goes in, so he
+    // reads as walking away from us rather than sliding along a flat line.
+    if (state.finaleT > 0 && state.finale) {
+      const f = state.finale;
+      const e = easeInOut(clamp(state.finaleT, 0, 1));
+      const fromX = w * Scenes.pilgrimX(state.progress);
+      px = lerp(fromX, w * f.x, e);
+      py = lerp(groundY, h * (Scenes.GROUND - f.rise), e);
+      pscale = scale * (1 - f.shrink * e);
+      // Hold him solid for the walk, then let him pass inside over the last
+      // stretch. Fading from the first frame made him evaporate in the road.
+      const into = clamp((state.finaleT - 0.58) / 0.42, 0, 1);
+      palpha = 1 - f.fade * into * into;
+    }
+
+    ctx.globalAlpha = Math.max(0, palpha);
+    drawPilgrim(px, py, pscale, stage.figure, phase, striding, state.miracle);
+    ctx.globalAlpha = 1;
     ctx.restore();
 
     // The strip the camera uncovered: continue the last drawn row downward, so the
@@ -4210,6 +4292,14 @@ const Engine = (function () {
     return false;
   }
 
+  /* Put the pilgrim straight at a point on the road, without walking there. Used
+     when a finished stage is reopened: he is already at the landmark. */
+  function placeAt(progress) {
+    state.progress = clamp(progress, 0, 1);
+    state.target = state.progress;
+    state.walking = false;
+  }
+
   /* When a question sheet covers the bottom of the scene, pull the ground line up
      by that many CSS pixels so the pilgrim stays in view while he is being asked. */
   function setLift(px) {
@@ -4218,6 +4308,19 @@ const Engine = (function () {
 
   function passGate(i) { state.gatesPassed[i] = true; }
   function miracle() { state.miracleActive = true; }
+
+  /* Send the pilgrim into the landmark. Called once the last gate is answered
+     and the miracle has opened; onFinaleDone fires when he has arrived. */
+  function beginFinale() {
+    const f = Scenes.finaleFor(state.stage && state.stage.scene);
+    if (!f) return false;
+    state.finale = f;
+    state.finaleT = 0;
+    state.finaleOn = true;
+    state.walking = false;
+    state.target = state.progress;
+    return true;
+  }
   function pause(on) { state.paused = on; }
 
   function reset() {
@@ -4227,6 +4330,9 @@ const Engine = (function () {
     state.miracle = 0;
     state.miracleActive = false;
     state.stepAcc = 0;
+    state.finale = null;
+    state.finaleT = 0;
+    state.finaleOn = false;
     if (state.stage) state.gatesPassed = state.stage.gates.map(function () { return false; });
   }
 
@@ -4241,7 +4347,9 @@ const Engine = (function () {
   return {
     init: init, load: load, walkTo: walkTo, stride: stride, passGate: passGate,
     miracle: miracle, reset: reset, pause: pause, nextGate: nextGate,
+    beginFinale: beginFinale, placeAt: placeAt,
     get progress() { return state.progress; },
+    get finaleT() { return state.finaleT; },
     setLift: setLift,
     get walking() { return state.walking; },
     get miracleLevel() { return state.miracle; },
@@ -4410,6 +4518,9 @@ const UI = (function () {
     busy: false,           // true while a card is up or walking
     complete: false,
     lastSlot: -1,          // slot the right answer used last, so it can move
+    // Set while a finished stage replays its arrival, so the completion card can
+    // be held back until the walk into the landmark is actually done.
+    awaitingArrival: false,
   };
 
   let bible = { tab: 'read', view: 'chapters', book: null, chapter: 1, highlight: 0 };
@@ -4535,6 +4646,7 @@ const UI = (function () {
     app.complete = false;
     app.busy = false;
     app.gateIndex = 0;
+    app.awaitingArrival = false;
 
     const stage = STAGES[i];
     Engine.load(stage);
@@ -4565,11 +4677,22 @@ const UI = (function () {
     hideCard('complete');
 
     if (stageDone(i) && !options.replay) {
-      Engine.walkTo(1);
-      Engine.miracle();
+      // He is already at the landmark, not at the far end of the road, so put him
+      // where the finale starts and let it carry him in. Walking to 1 first sent
+      // him past the ark and then dragged him back to it.
+      const fin = Scenes.finaleFor(stage.scene);
+      app.awaitingArrival = !!fin;
+      if (fin) {
+        Engine.placeAt(Scenes.progressAtX(fin.x));
+        Engine.miracle();
+        setTimeout(() => Engine.beginFinale(), 700);
+      } else {
+        Engine.walkTo(1);
+        Engine.miracle();
+      }
       app.complete = true;
       caption('This journey is already walked. Tap Forward to walk it again.', true);
-      setTimeout(() => showComplete(true), 1400);
+      if (!fin) setTimeout(() => showComplete(true), 2200);
     } else {
       caption(stage.intro);
     }
@@ -4589,6 +4712,8 @@ const UI = (function () {
 
   function step() {
     if (app.busy || app.complete) return;
+    // The finale walk is not steerable: he is already on his way in.
+    if (Engine.finaleT > 0) return;
     const stage = STAGES[app.stageIndex];
     const { at, gate } = forwardTarget();
 
@@ -4874,14 +4999,16 @@ const UI = (function () {
     const stage = STAGES[app.stageIndex];
     const allSolved = stage.gates.every((_, i) => solved[i]);
 
-    app.busy = false;
+    // On the last gate the rest of the stage is a cutscene: lock the controls so
+    // a tap cannot skip past the walk into the landmark.
+    app.busy = allSolved;
 
     if (allSolved) {
       caption(stage.miracle, true);
-      setTimeout(() => {
-        Engine.walkTo(1);
-        Engine.miracle();
-      }, 420);
+      // The miracle opens the way first; when it has finished, onMiracleDone
+      // sends him walking into it. Doing it in that order means he never walks
+      // through water that is still parting or a wall that is still falling.
+      setTimeout(() => Engine.miracle(), 420);
     } else {
       caption('The way is open. Walk on.');
     }
@@ -5313,7 +5440,17 @@ const UI = (function () {
         }
       },
       onMiracleDone: () => {
-        setTimeout(() => finishStage(), 500);
+        // The way is open. Now he walks into it. If a scene has no finale
+        // geometry, fall back to the old behaviour and finish the stage.
+        if (!Engine.beginFinale()) setTimeout(() => finishStage(), 700);
+      },
+      onFinaleDone: () => {
+        if (app.awaitingArrival) {
+          app.awaitingArrival = false;
+          setTimeout(() => showComplete(true), 500);
+          return;
+        }
+        setTimeout(() => finishStage(), 600);
       },
     });
 

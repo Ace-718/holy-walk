@@ -39,6 +39,44 @@ const Scenes = (function () {
     return lerp(START_X, END_X, clamp(progress, 0, 1));
   }
 
+  // The inverse: how much road must be covered to stand at screen x. The finale
+  // uses it to stop the pilgrim at the landmark's foot instead of walking past it.
+  function progressAtX(x) {
+    return clamp((START_X - x) / (START_X - END_X), 0, 1);
+  }
+
+  /* ── The finale ──────────────────────────────────────────────
+     Once every gate is answered the pilgrim does not stop at the end of the
+     road: he walks into the thing the scene is about. Each scene says where
+     that threshold is (x), how far he rises toward it (rise, as a fraction of
+     the height), how much he shrinks walking away (shrink), how far he fades
+     as he passes inside (fade), and how long the whole walk takes (dur).
+
+     rise is measured from GROUND up toward the horizon, so a scene whose
+     landmark sits at FAR_Y needs about 0.16, and the Red Sea corridor — which
+     runs all the way to the far shore — needs a full 0.40.
+     ═══════════════════════════════════════════════════════════ */
+  const FINALE = {
+    // up the dry corridor, between the walls, to the far shore
+    'red-sea': { x: AXIS_X, rise: 0.400, shrink: 0.58, fade: 0.10, dur: 3.2 },
+    // through the open door of the ark, out of the rain
+    'ark': { x: AXIS_X, rise: 0.160, shrink: 0.66, fade: 1.00, dur: 2.8 },
+    // through the gap where the wall stood
+    'jericho': { x: AXIS_X, rise: 0.150, shrink: 0.36, fade: 0.70, dur: 2.4 },
+    'elah': { x: AXIS_X, rise: 0.150, shrink: 0.34, fade: 0.55, dur: 2.4 },
+    'carmel': { x: AXIS_X, rise: 0.150, shrink: 0.34, fade: 0.55, dur: 2.4 },
+    // across the water toward the city on the far bank
+    'nineveh': { x: 0.20, rise: 0.150, shrink: 0.40, fade: 0.60, dur: 2.8 },
+    // into the mouth of the den
+    'den': { x: AXIS_X, rise: 0.150, shrink: 0.38, fade: 0.80, dur: 2.4 },
+    // across the Jordan to the far bank
+    'jordan': { x: AXIS_X, rise: 0.150, shrink: 0.36, fade: 0.55, dur: 2.8 },
+  };
+
+  function finaleFor(scene) {
+    return FINALE[scene] || null;
+  }
+
   /* ── Deterministic RNG (mulberry32) ── */
   function rng(seed) {
     let a = seed >>> 0;
@@ -890,7 +928,9 @@ const Scenes = (function () {
     if (cityA > 0.02) {
       ctx.globalAlpha = cityA;
       const r = rng(131);
-      const bx = w * 0.86;
+      // The city sits on the far bank, ahead of the walker: he travels right to
+      // left, so Nineveh has to rise on the left or he would walk away from it.
+      const bx = w * 0.17;
       const by = hy + h * 0.01;
       for (let i = 0; i < 14; i++) {
         const bw = w * (0.016 + r() * 0.028);
@@ -899,7 +939,7 @@ const Scenes = (function () {
         bg.addColorStop(0, '#506472');
         bg.addColorStop(1, '#2b3943');
         ctx.fillStyle = bg;
-        ctx.fillRect(bx + (r() - 0.5) * w * 0.26, by - bh, bw, bh);
+        ctx.fillRect(bx + (r() - 0.5) * w * 0.22, by - bh, bw, bh);
       }
       ctx.globalAlpha = 1;
     }
@@ -1192,6 +1232,8 @@ const Scenes = (function () {
     FAR_Y: FAR_Y,
     GROUND: GROUND,
     pilgrimX: pilgrimX,
+    progressAtX: progressAtX,
+    finaleFor: finaleFor,
     START_X: START_X,
     END_X: END_X,
     GATE_X: GATE_X,

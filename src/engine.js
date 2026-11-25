@@ -33,6 +33,11 @@ const Engine = (function () {
     dust: [],
     sparks: [],
     stepAcc: 0,
+    // The finale: 0 while he is still on the road, 1 once he is inside the
+    // landmark. `finale` holds the geometry for the current scene.
+    finale: null,
+    finaleT: 0,
+    finaleOn: false,
     w: 0, h: 0, dpr: 1,
   };
 
@@ -580,6 +585,16 @@ const Engine = (function () {
       }
     }
 
+    // The finale walk: the pilgrim leaves the road and goes into the landmark.
+    // It runs after the miracle has opened, so the way is clear before he moves.
+    if (state.finaleOn && !state.paused) {
+      state.finaleT = Math.min(1, state.finaleT + dt / state.finale.dur);
+      if (state.finaleT >= 1) {
+        state.finaleOn = false;
+        if (hooks.onFinaleDone) hooks.onFinaleDone();
+      }
+    }
+
     if (!state.paused) stepParticles(dt);
 
     // The camera eases up when a question sheet covers the bottom of the scene,
@@ -604,9 +619,34 @@ const Engine = (function () {
     // Big enough to read the gait on a phone. At 0.14 the figure was a speck and
     // all the walk-cycle work was invisible.
     const scale = Math.min(w, h) * 0.23;
-    const phase = state.time * (state.walking ? 7.4 : 0.75);
-    const px = w * Scenes.pilgrimX(state.progress);
-    drawPilgrim(px, groundY, scale, stage.figure, phase, state.walking, state.miracle);
+    // On the finale he is walking even though the road progress is not moving, so
+    // the gait has to be driven by the same flag the legs are drawn from.
+    const striding = state.walking || (state.finaleOn && state.finaleT > 0);
+    const phase = state.time * (striding ? 7.4 : 0.75);
+    let px = w * Scenes.pilgrimX(state.progress);
+    let py = groundY;
+    let pscale = scale;
+    let palpha = 1;
+
+    // On the finale he leaves the road: the walk takes him along the ground and
+    // up into the landmark at once, shrinking and fading as he goes in, so he
+    // reads as walking away from us rather than sliding along a flat line.
+    if (state.finaleT > 0 && state.finale) {
+      const f = state.finale;
+      const e = easeInOut(clamp(state.finaleT, 0, 1));
+      const fromX = w * Scenes.pilgrimX(state.progress);
+      px = lerp(fromX, w * f.x, e);
+      py = lerp(groundY, h * (Scenes.GROUND - f.rise), e);
+      pscale = scale * (1 - f.shrink * e);
+      // Hold him solid for the walk, then let him pass inside over the last
+      // stretch. Fading from the first frame made him evaporate in the road.
+      const into = clamp((state.finaleT - 0.58) / 0.42, 0, 1);
+      palpha = 1 - f.fade * into * into;
+    }
+
+    ctx.globalAlpha = Math.max(0, palpha);
+    drawPilgrim(px, py, pscale, stage.figure, phase, striding, state.miracle);
+    ctx.globalAlpha = 1;
     ctx.restore();
 
     // The strip the camera uncovered: continue the last drawn row downward, so the
@@ -691,6 +731,14 @@ const Engine = (function () {
     return false;
   }
 
+  /* Put the pilgrim straight at a point on the road, without walking there. Used
+     when a finished stage is reopened: he is already at the landmark. */
+  function placeAt(progress) {
+    state.progress = clamp(progress, 0, 1);
+    state.target = state.progress;
+    state.walking = false;
+  }
+
   /* When a question sheet covers the bottom of the scene, pull the ground line up
      by that many CSS pixels so the pilgrim stays in view while he is being asked. */
   function setLift(px) {
@@ -699,6 +747,19 @@ const Engine = (function () {
 
   function passGate(i) { state.gatesPassed[i] = true; }
   function miracle() { state.miracleActive = true; }
+
+  /* Send the pilgrim into the landmark. Called once the last gate is answered
+     and the miracle has opened; onFinaleDone fires when he has arrived. */
+  function beginFinale() {
+    const f = Scenes.finaleFor(state.stage && state.stage.scene);
+    if (!f) return false;
+    state.finale = f;
+    state.finaleT = 0;
+    state.finaleOn = true;
+    state.walking = false;
+    state.target = state.progress;
+    return true;
+  }
   function pause(on) { state.paused = on; }
 
   function reset() {
@@ -708,6 +769,9 @@ const Engine = (function () {
     state.miracle = 0;
     state.miracleActive = false;
     state.stepAcc = 0;
+    state.finale = null;
+    state.finaleT = 0;
+    state.finaleOn = false;
     if (state.stage) state.gatesPassed = state.stage.gates.map(function () { return false; });
   }
 
@@ -722,7 +786,9 @@ const Engine = (function () {
   return {
     init: init, load: load, walkTo: walkTo, stride: stride, passGate: passGate,
     miracle: miracle, reset: reset, pause: pause, nextGate: nextGate,
+    beginFinale: beginFinale, placeAt: placeAt,
     get progress() { return state.progress; },
+    get finaleT() { return state.finaleT; },
     setLift: setLift,
     get walking() { return state.walking; },
     get miracleLevel() { return state.miracle; },
