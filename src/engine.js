@@ -9,6 +9,11 @@
 const Engine = (function () {
   const { clamp, lerp, easeOut, easeInOut } = Scenes;
 
+  // Road covered by one tap, and how fast the pilgrim covers it. At 0.085 the
+  // first gate (0.42) takes five taps, so the walk itself is part of the game.
+  const STRIDE = 0.085;
+  const WALK_SPEED = 0.20;
+
   const canvas = document.getElementById('stage');
   const ctx = canvas.getContext('2d', { alpha: false });
 
@@ -55,119 +60,311 @@ const Engine = (function () {
      ═══════════════════════════════════════════════════════════════ */
   function drawPilgrim(cx, baseY, scale, fig, phase, walking, miracle) {
     const s = scale;
-    const swing = walking ? Math.sin(phase) : Math.sin(phase * 0.3) * 0.2;
-    const bob = walking ? Math.abs(Math.sin(phase)) * s * 0.026 : Math.sin(phase * 0.5) * s * 0.005;
+
+    // ── Gait ──────────────────────────────────────────────────
+    // One stride per 2π of phase. Thighs swing in antiphase; a knee only bends
+    // while its leg is travelling forward, which is what keeps the walk from
+    // looking like a pendulum.
+    const amp = walking ? 0.44 : 0;
+    const nearThigh = amp * Math.sin(phase);
+    const farThigh = amp * Math.sin(phase + Math.PI);
+    const nearKnee = walking ? 1.05 * Math.max(0, -Math.cos(phase)) : 0.05;
+    const farKnee = walking ? 1.05 * Math.max(0, -Math.cos(phase + Math.PI)) : 0.05;
+
+    // the body rises at mid-stance and drops at double support
+    const bob = walking
+      ? -Math.abs(Math.cos(phase)) * s * 0.014
+      : Math.sin(phase * 0.5) * s * 0.004;
+    const lean = walking ? 0.045 : 0.02;
+
+    const hipX = 0;
+    const hipY = -s * 0.455;
+    const thighLen = s * 0.222;
+    const shinLen = s * 0.215;
+
+    function joints(thigh, knee) {
+      const kx = hipX + Math.sin(thigh) * thighLen;
+      const ky = hipY + Math.cos(thigh) * thighLen;
+      const shinAngle = thigh - knee;
+      return {
+        kx: kx, ky: ky,
+        ax: kx + Math.sin(shinAngle) * shinLen,
+        ay: ky + Math.cos(shinAngle) * shinLen,
+        foot: shinAngle,
+      };
+    }
 
     ctx.save();
-    ctx.translate(cx, baseY - bob);
-
-    // shadow
-    ctx.fillStyle = 'rgba(0,0,0,.42)';
-    ctx.beginPath();
-    ctx.ellipse(0, 1, s * 0.32, s * 0.065, 0, 0, Math.PI * 2);
-    ctx.fill();
-
+    ctx.translate(cx, baseY + bob);
+    ctx.rotate(lean * 0.35);
     ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
-    // back leg
-    ctx.strokeStyle = '#221a16';
-    ctx.lineWidth = s * 0.072;
+    // ── Shadow, softened and offset by the light ────────────────
+    const sh = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 0.30);
+    sh.addColorStop(0, 'rgba(0,0,0,.5)');
+    sh.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sh;
     ctx.beginPath();
-    ctx.moveTo(-s * 0.028, -s * 0.35);
-    ctx.lineTo(-s * 0.028 - swing * s * 0.14, -s * 0.018);
-    ctx.stroke();
+    ctx.ellipse(0, 0, s * 0.30, s * 0.055, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-    // cloak, swept back from the shoulders
-    ctx.fillStyle = fig.cloak;
+    /* ── Cloak, trailing behind ─────────────────────────────── */
+    const flutter = Math.sin(phase * 1.6) * s * 0.012 * (walking ? 1 : 0.3);
+    const cg = ctx.createLinearGradient(-s * 0.06, -s * 0.78, -s * 0.30, -s * 0.20);
+    cg.addColorStop(0, fig.cloak);
+    cg.addColorStop(1, shade(fig.cloak, -0.45));
+    ctx.fillStyle = cg;
     ctx.beginPath();
-    ctx.moveTo(-s * 0.095, -s * 0.71);
-    ctx.quadraticCurveTo(-s * 0.33 - swing * s * 0.055, -s * 0.45, -s * 0.24 - swing * s * 0.075, -s * 0.025);
-    ctx.lineTo(s * 0.045, -s * 0.025);
-    ctx.quadraticCurveTo(-s * 0.028, -s * 0.41, -s * 0.095, -s * 0.71);
+    ctx.moveTo(-s * 0.055, -s * 0.765);
+    ctx.quadraticCurveTo(-s * 0.20, -s * 0.60, -s * 0.215 - flutter, -s * 0.30);
+    ctx.quadraticCurveTo(-s * 0.16 - flutter, -s * 0.255, -s * 0.105 - flutter * 0.5, -s * 0.315);
+    ctx.quadraticCurveTo(-s * 0.10, -s * 0.58, -s * 0.045, -s * 0.70);
     ctx.closePath();
     ctx.fill();
 
-    // robe, tapered from the shoulders to the hem
-    const rg = ctx.createLinearGradient(s * 0.1, -s * 0.73, s * 0.1, 0);
-    rg.addColorStop(0, fig.robe);
-    rg.addColorStop(1, shade(fig.robe, -0.34));
-    ctx.fillStyle = rg;
-    ctx.beginPath();
-    ctx.moveTo(-s * 0.105, -s * 0.71);
-    ctx.quadraticCurveTo(s * 0.02, -s * 0.775, s * 0.11, -s * 0.69);
-    ctx.quadraticCurveTo(s * 0.155, -s * 0.35, s * 0.125 + swing * s * 0.02, -s * 0.018);
-    ctx.lineTo(-s * 0.115 + swing * s * 0.02, -s * 0.018);
-    ctx.quadraticCurveTo(-s * 0.155, -s * 0.37, -s * 0.105, -s * 0.71);
-    ctx.closePath();
-    ctx.fill();
-
-    // fold
-    ctx.strokeStyle = 'rgba(0,0,0,.2)';
-    ctx.lineWidth = Math.max(0.8, s * 0.014);
-    ctx.beginPath();
-    ctx.moveTo(s * 0.008, -s * 0.63);
-    ctx.quadraticCurveTo(s * 0.028, -s * 0.35, s * 0.004 + swing * s * 0.014, -s * 0.045);
-    ctx.stroke();
-
-    // front leg
-    ctx.strokeStyle = '#2a221b';
-    ctx.lineWidth = s * 0.072;
-    ctx.beginPath();
-    ctx.moveTo(s * 0.018, -s * 0.35);
-    ctx.lineTo(s * 0.018 + swing * s * 0.14, -s * 0.018);
-    ctx.stroke();
-
-    // sash
-    ctx.strokeStyle = 'rgba(217,169,78,.68)';
-    ctx.lineWidth = Math.max(1.1, s * 0.023);
-    ctx.beginPath();
-    ctx.moveTo(-s * 0.115, -s * 0.495);
-    ctx.lineTo(s * 0.115, -s * 0.45);
-    ctx.stroke();
-
-    // neck
-    ctx.strokeStyle = fig.skin;
-    ctx.lineWidth = s * 0.048;
-    ctx.beginPath();
-    ctx.moveTo(s * 0.012, -s * 0.73);
-    ctx.lineTo(s * 0.018, -s * 0.79);
-    ctx.stroke();
-
-    // head
-    ctx.fillStyle = fig.skin;
-    ctx.beginPath();
-    ctx.arc(s * 0.022, -s * 0.845, s * 0.083, 0, Math.PI * 2);
-    ctx.fill();
-
-    // head cloth
-    ctx.fillStyle = shade(fig.cloak, 0.14);
-    ctx.beginPath();
-    ctx.arc(s * 0.022, -s * 0.858, s * 0.088, Math.PI * 0.92, Math.PI * 2.08);
-    ctx.fill();
-
-    // beard
-    if (fig.beard) {
-      ctx.fillStyle = 'rgba(214,209,199,.76)';
+    /* ── Far leg (behind the body, drawn darker) ─────────────── */
+    function drawLeg(j, colour, shadeAmt, footAmt) {
+      const skin = shade(colour, shadeAmt);
+      ctx.strokeStyle = skin;
+      ctx.lineWidth = s * 0.070;
       ctx.beginPath();
-      ctx.moveTo(-s * 0.032, -s * 0.835);
-      ctx.quadraticCurveTo(s * 0.028, -s * 0.715, s * 0.078, -s * 0.825);
-      ctx.quadraticCurveTo(s * 0.018, -s * 0.79, -s * 0.032, -s * 0.835);
+      ctx.moveTo(hipX - s * 0.012, hipY);
+      ctx.lineTo(j.kx - s * 0.012, j.ky);
+      ctx.stroke();
+      ctx.lineWidth = s * 0.055;
+      ctx.beginPath();
+      ctx.moveTo(j.kx - s * 0.012, j.ky);
+      ctx.lineTo(j.ax - s * 0.012, j.ay);
+      ctx.stroke();
+
+      // foot, flat to the ground when planted
+      const fx = j.ax - s * 0.012;
+      const lift = Math.max(0, -j.ay / (s * 0.02)) * 0;
+      ctx.fillStyle = shade(fig.skin, footAmt);
+      ctx.beginPath();
+      ctx.moveTo(fx - s * 0.012, j.ay - lift - s * 0.020);
+      ctx.quadraticCurveTo(fx + s * 0.052, j.ay - lift - s * 0.026, fx + s * 0.062, j.ay - lift - s * 0.004);
+      ctx.quadraticCurveTo(fx + s * 0.058, j.ay - lift + s * 0.008, fx - s * 0.012, j.ay - lift + s * 0.006);
       ctx.closePath();
       ctx.fill();
     }
 
-    // staff
-    if (fig.staff) {
-      ctx.strokeStyle = '#6b5334';
-      ctx.lineWidth = Math.max(1.4, s * 0.027);
+    const farJ = joints(farThigh, farKnee);
+    drawLeg(farJ, fig.cloak, -0.28, -0.20);
+
+    /* ── Far arm, swinging opposite the far leg ───────────────── */
+    const armSwing = walking ? 0.36 * Math.sin(phase + Math.PI) : 0.05;
+    const shX = s * 0.012;
+    const shY = -s * 0.735;
+    const upper = s * 0.155;
+    const fore = s * 0.145;
+    const elbowX = shX + Math.sin(armSwing) * upper;
+    const elbowY = shY + Math.cos(armSwing) * upper;
+    const handAngle = armSwing - 0.28;
+    const handX = elbowX + Math.sin(handAngle) * fore;
+    const handY = elbowY + Math.cos(handAngle) * fore;
+
+    ctx.strokeStyle = shade(fig.robe, -0.42);
+    ctx.lineWidth = s * 0.050;
+    ctx.beginPath();
+    ctx.moveTo(shX, shY);
+    ctx.lineTo(elbowX, elbowY);
+    ctx.lineTo(handX, handY);
+    ctx.stroke();
+
+    /* ── Tunic ──────────────────────────────────────────────── */
+    const tg = ctx.createLinearGradient(-s * 0.09, -s * 0.74, s * 0.10, -s * 0.30);
+    tg.addColorStop(0, shade(fig.robe, 0.10));
+    tg.addColorStop(0.55, fig.robe);
+    tg.addColorStop(1, shade(fig.robe, -0.34));
+    ctx.fillStyle = tg;
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.088, -s * 0.755);                       // left shoulder
+    ctx.quadraticCurveTo(s * 0.012, -s * 0.80, s * 0.098, -s * 0.745); // over the shoulder
+    ctx.quadraticCurveTo(s * 0.115, -s * 0.60, s * 0.098, -s * 0.475); // down the side
+    // skirt of the tunic, swaying with the stride
+    ctx.quadraticCurveTo(s * 0.115 + nearThigh * s * 0.10, -s * 0.38, s * 0.078 + nearThigh * s * 0.055, -s * 0.275);
+    ctx.lineTo(-s * 0.072 + nearThigh * s * 0.05, -s * 0.278);
+    ctx.quadraticCurveTo(-s * 0.108, -s * 0.40, -s * 0.098, -s * 0.50);
+    ctx.quadraticCurveTo(-s * 0.098, -s * 0.64, -s * 0.088, -s * 0.755);
+    ctx.closePath();
+    ctx.fill();
+
+    // a fold down the front, and a hem shadow
+    ctx.strokeStyle = 'rgba(0,0,0,.22)';
+    ctx.lineWidth = Math.max(0.7, s * 0.010);
+    ctx.beginPath();
+    ctx.moveTo(s * 0.045, -s * 0.70);
+    ctx.quadraticCurveTo(s * 0.062, -s * 0.48, s * 0.052 + nearThigh * s * 0.05, -s * 0.285);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,0,0,.26)';
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.072 + nearThigh * s * 0.05, -s * 0.283);
+    ctx.lineTo(s * 0.076 + nearThigh * s * 0.055, -s * 0.280);
+    ctx.stroke();
+
+    /* ── Belt ──────────────────────────────────────────────── */
+    ctx.strokeStyle = 'rgba(150,110,52,.9)';
+    ctx.lineWidth = Math.max(1.1, s * 0.026);
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.092, -s * 0.500);
+    ctx.lineTo(s * 0.098, -s * 0.492);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(232,196,124,.95)';
+    ctx.beginPath();
+    ctx.arc(s * 0.052, -s * 0.494, Math.max(0.8, s * 0.016), 0, Math.PI * 2);
+    ctx.fill();
+
+    /* ── Near leg, in front ─────────────────────────────────── */
+    const nearJ = joints(nearThigh, nearKnee);
+    drawLeg(nearJ, fig.robe, -0.06, 0);
+
+    /* ── Neck and head in profile ───────────────────────────── */
+    ctx.strokeStyle = fig.skin;
+    ctx.lineWidth = s * 0.046;
+    ctx.beginPath();
+    ctx.moveTo(s * 0.006, -s * 0.765);
+    ctx.lineTo(s * 0.014, -s * 0.805);
+    ctx.stroke();
+
+    const hx = s * 0.020;
+    const hy = -s * 0.868;
+    const hr = s * 0.081;
+
+    // skull, with the jaw tapering toward the chin
+    const sg = ctx.createRadialGradient(hx - hr * 0.3, hy - hr * 0.4, hr * 0.2, hx, hy, hr * 1.25);
+    sg.addColorStop(0, shade(fig.skin, 0.16));
+    sg.addColorStop(1, shade(fig.skin, -0.12));
+    ctx.fillStyle = sg;
+    ctx.beginPath();
+    ctx.moveTo(hx + hr * 0.30, hy - hr * 0.92);
+    ctx.quadraticCurveTo(hx + hr * 1.02, hy - hr * 0.55, hx + hr * 0.96, hy + hr * 0.10);
+    ctx.quadraticCurveTo(hx + hr * 0.80, hy + hr * 0.72, hx + hr * 0.22, hy + hr * 0.92); // chin
+    ctx.quadraticCurveTo(hx - hr * 0.86, hy + hr * 0.86, hx - hr * 0.94, hy + hr * 0.02);
+    ctx.quadraticCurveTo(hx - hr * 0.90, hy - hr * 0.78, hx + hr * 0.30, hy - hr * 0.92);
+    ctx.closePath();
+    ctx.fill();
+
+    // Beard. Hangs from the jawline and below the chin. Anything drawn over the
+    // middle of the face reads as a mask at this size, so the face stays clear.
+    if (fig.beard) {
+      const bg = ctx.createLinearGradient(0, hy + hr * 0.35, 0, hy + hr * 2.2);
+      bg.addColorStop(0, 'rgba(112,102,86,.97)');
+      bg.addColorStop(0.5, 'rgba(88,80,66,.97)');
+      bg.addColorStop(1, 'rgba(58,52,42,.95)');
+      ctx.fillStyle = bg;
       ctx.beginPath();
-      ctx.moveTo(s * 0.175, -s * 0.87);
-      ctx.lineTo(s * 0.205, s * 0.012);
-      ctx.stroke();
-      if (miracle > 0.05) {
-        ctx.fillStyle = 'rgba(244,212,146,' + (0.35 + miracle * 0.65) + ')';
+      ctx.moveTo(hx - hr * 0.30, hy + hr * 0.62);          // behind the jaw
+      ctx.quadraticCurveTo(hx + hr * 0.10, hy + hr * 0.50, hx + hr * 0.52, hy + hr * 0.74); // jawline
+      ctx.quadraticCurveTo(hx + hr * 0.46, hy + hr * 1.30, hx + hr * 0.20, hy + hr * 2.10); // point
+      ctx.quadraticCurveTo(hx - hr * 0.10, hy + hr * 1.40, hx - hr * 0.36, hy + hr * 0.92);
+      ctx.closePath();
+      ctx.fill();
+
+      // moustache, a short bar under the nose
+      ctx.beginPath();
+      ctx.moveTo(hx + hr * 0.82, hy + hr * 0.26);
+      ctx.quadraticCurveTo(hx + hr * 0.40, hy + hr * 0.24, hx + hr * 0.10, hy + hr * 0.46);
+      ctx.quadraticCurveTo(hx + hr * 0.44, hy + hr * 0.54, hx + hr * 0.80, hy + hr * 0.44);
+      ctx.closePath();
+      ctx.fill();
+
+      // strands
+      ctx.strokeStyle = 'rgba(160,150,132,.30)';
+      ctx.lineWidth = Math.max(0.4, s * 0.004);
+      for (let i = 0; i < 3; i++) {
+        const f = i / 2;
         ctx.beginPath();
-        ctx.arc(s * 0.175, -s * 0.87, Math.max(1.3, s * 0.023), 0, Math.PI * 2);
+        ctx.moveTo(hx + hr * (0.34 - f * 0.36), hy + hr * 0.86);
+        ctx.quadraticCurveTo(hx + hr * (0.30 - f * 0.32), hy + hr * 1.40, hx + hr * (0.18 - f * 0.14), hy + hr * 1.94);
+        ctx.stroke();
+      }
+    }
+
+    // nose, small and drawn last so it sits on top of the beard
+    ctx.fillStyle = shade(fig.skin, 0.06);
+    ctx.beginPath();
+    ctx.moveTo(hx + hr * 0.72, hy - hr * 0.22);
+    ctx.quadraticCurveTo(hx + hr * 1.20, hy + hr * 0.10, hx + hr * 0.74, hy + hr * 0.30);
+    ctx.closePath();
+    ctx.fill();
+
+    // brow shadow
+    ctx.fillStyle = 'rgba(0,0,0,.13)';
+    ctx.beginPath();
+    ctx.ellipse(hx + hr * 0.46, hy - hr * 0.30, hr * 0.34, hr * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // hair: a close cap swept back from the brow
+    const hg = ctx.createLinearGradient(hx - hr, hy - hr, hx + hr * 0.5, hy);
+    hg.addColorStop(0, shade(fig.cloak, 0.12));
+    hg.addColorStop(1, shade(fig.cloak, -0.20));
+    ctx.fillStyle = hg;
+    ctx.beginPath();
+    ctx.moveTo(hx + hr * 0.62, hy - hr * 0.52);              // hairline at the brow
+    ctx.quadraticCurveTo(hx + hr * 0.24, hy - hr * 1.08, hx - hr * 0.50, hy - hr * 0.84);
+    ctx.quadraticCurveTo(hx - hr * 1.06, hy - hr * 0.22, hx - hr * 0.90, hy + hr * 0.40);
+    ctx.quadraticCurveTo(hx - hr * 0.80, hy - hr * 0.02, hx - hr * 0.64, hy - hr * 0.34);
+    ctx.quadraticCurveTo(hx - hr * 0.24, hy - hr * 0.66, hx + hr * 0.62, hy - hr * 0.52);
+    ctx.closePath();
+    ctx.fill();
+
+    /* ── Near arm, and the staff it carries ───────────────────── */
+    // With a staff the arm is held out to the side, so the shaft stands clear of
+    // the face instead of running up through it.
+    const nearSwing = fig.staff
+      ? 0.52 + (walking ? 0.06 * Math.sin(phase) : 0)
+      : (walking ? 0.36 * Math.sin(phase) : 0.05);
+    const nShX = s * 0.030;
+    const nShY = -s * 0.732;
+    const nElbowX = nShX + Math.sin(nearSwing) * upper;
+    const nElbowY = nShY + Math.cos(nearSwing) * upper;
+    const nHandAngle = nearSwing - (fig.staff ? 0.10 : 0.30);
+    const nHandX = nElbowX + Math.sin(nHandAngle) * fore;
+    const nHandY = nElbowY + Math.cos(nHandAngle) * fore;
+
+    ctx.strokeStyle = shade(fig.robe, -0.12);
+    ctx.lineWidth = s * 0.048;
+    ctx.beginPath();
+    ctx.moveTo(nShX, nShY);
+    ctx.lineTo(nElbowX, nElbowY);
+    ctx.lineTo(nHandX, nHandY);
+    ctx.stroke();
+
+    ctx.fillStyle = fig.skin;
+    ctx.beginPath();
+    ctx.arc(nHandX, nHandY, Math.max(1.0, s * 0.026), 0, Math.PI * 2);
+    ctx.fill();
+
+    if (fig.staff) {
+      // the staff is planted ahead of the walker and tips with each stride
+      const tilt = (walking ? 0.03 + Math.sin(phase) * 0.03 : 0.02);
+      const bx = nHandX;
+      const by = nHandY;
+      const topX = bx + Math.sin(tilt) * s * 0.80;
+      const topY = by - Math.cos(tilt) * s * 0.80;
+
+      ctx.strokeStyle = '#6a5334';
+      ctx.lineWidth = Math.max(1.2, s * 0.024);
+      ctx.beginPath();
+      ctx.moveTo(topX, topY);
+      ctx.lineTo(bx, 0);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(180,150,96,.55)';
+      ctx.lineWidth = Math.max(0.5, s * 0.007);
+      ctx.beginPath();
+      ctx.moveTo(topX + s * 0.006, topY);
+      ctx.lineTo(bx + s * 0.006, 0);
+      ctx.stroke();
+
+      if (miracle > 0.05) {
+        const gg = ctx.createRadialGradient(topX, topY, 0, topX, topY, s * 0.11);
+        gg.addColorStop(0, 'rgba(248,224,166,' + (0.55 + miracle * 0.45) + ')');
+        gg.addColorStop(1, 'rgba(248,224,166,0)');
+        ctx.fillStyle = gg;
+        ctx.beginPath();
+        ctx.arc(topX, topY, s * 0.11, 0, Math.PI * 2);
         ctx.fill();
       }
     }
@@ -184,51 +381,75 @@ const Engine = (function () {
   function drawGate(gate, passed, w, h, time) {
     if (passed) return;
 
-    const pulse = 0.5 + Math.sin(time * 2.1) * 0.5;
+    const pulse = 0.5 + Math.sin(time * 1.7) * 0.5;
     const x = w * Scenes.GATE_X;
-    const top = h * (Scenes.GROUND - 0.13);
-    const bot = h * (Scenes.GROUND + 0.012);
-    const halfW = w * 0.075;
+    const bot = h * (Scenes.GROUND + 0.010);
+    const rise = h * 0.26;
+    const halfW = w * 0.15;
 
-    // a low, wide curtain of light standing across the road
-    const g = ctx.createLinearGradient(0, top, 0, bot);
-    g.addColorStop(0, 'rgba(244,212,146,0)');
-    g.addColorStop(0.3, 'rgba(244,212,146,' + (0.05 + pulse * 0.035) + ')');
-    g.addColorStop(0.85, 'rgba(246,220,164,' + (0.1 + pulse * 0.05) + ')');
-    g.addColorStop(1, 'rgba(244,212,146,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(x - halfW, top);
-    ctx.quadraticCurveTo(x - halfW * 0.94, (top + bot) / 2, x - halfW * 0.9, bot);
-    ctx.lineTo(x + halfW * 0.9, bot);
-    ctx.quadraticCurveTo(x + halfW * 0.94, (top + bot) / 2, x + halfW, top);
-    ctx.closePath();
-    ctx.fill();
+    // A bank of luminous mist standing across the road. Built from soft radial
+    // blobs rather than lines or a rectangle, so it has no edge to read as an
+    // object and no top line to read as a panel.
+    ctx.save();
+    for (let i = 0; i < 9; i++) {
+      const f = i / 8;
+      const bx = x + (f - 0.5) * halfW * 1.6;
+      const edge = Math.max(0, 1 - Math.abs(f - 0.5) * 2.0);
+      const by = bot - rise * (0.34 + Math.sin(f * 3.1 + time * 0.7) * 0.08);
+      const r = halfW * (0.60 + Math.sin(f * 5.0) * 0.10);
 
-    // fine vertical threads, brightest at the foot
-    for (let i = -4; i <= 4; i++) {
-      const fx = x + i * halfW * 0.22;
-      const falloff = 1 - Math.abs(i) / 5.4;
-      const a = (0.1 + pulse * 0.13) * falloff;
-      ctx.strokeStyle = 'rgba(246,224,170,' + a + ')';
-      ctx.lineWidth = i === 0 ? 1.5 : 1;
+      const g = ctx.createRadialGradient(bx, by, 0, bx, by, r);
+      g.addColorStop(0, 'rgba(252,234,186,' + ((0.17 + pulse * 0.08) * edge).toFixed(3) + ')');
+      g.addColorStop(0.5, 'rgba(248,224,164,' + ((0.09 + pulse * 0.05) * edge).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(244,212,146,0)');
+      ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.moveTo(fx, top + h * 0.03);
+      ctx.ellipse(bx, by, r, rise * 0.62, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // soft vertical shafts of light, fading out at both ends
+    for (let i = -3; i <= 3; i++) {
+      const fx = x + i * halfW * 0.30;
+      const edge = 1 - Math.abs(i) / 4.2;
+      const a = (0.07 + pulse * 0.05) * edge;
+      const shaft = ctx.createLinearGradient(0, bot - rise, 0, bot);
+      shaft.addColorStop(0, 'rgba(252,234,186,0)');
+      shaft.addColorStop(0.45, 'rgba(252,234,186,' + (a * 0.7).toFixed(3) + ')');
+      shaft.addColorStop(1, 'rgba(252,234,186,' + a.toFixed(3) + ')');
+      ctx.strokeStyle = shaft;
+      ctx.lineWidth = Math.max(2, w * 0.016);
+      ctx.beginPath();
+      ctx.moveTo(fx, bot - rise);
       ctx.lineTo(fx, bot);
       ctx.stroke();
     }
+    ctx.restore();
 
-    // a seam of light along the ground where the curtain meets the road
+    // the ground it stands on, lit from within
     const seam = ctx.createLinearGradient(x - halfW, 0, x + halfW, 0);
     seam.addColorStop(0, 'rgba(246,224,170,0)');
-    seam.addColorStop(0.5, 'rgba(248,230,180,' + (0.5 + pulse * 0.35) + ')');
+    seam.addColorStop(0.5, 'rgba(252,238,196,' + (0.42 + pulse * 0.26) + ')');
     seam.addColorStop(1, 'rgba(246,224,170,0)');
     ctx.strokeStyle = seam;
-    ctx.lineWidth = 2.4;
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(x - halfW, bot);
-    ctx.lineTo(x + halfW, bot);
+    ctx.quadraticCurveTo(x, bot - h * 0.006, x + halfW, bot);
     ctx.stroke();
+
+    // a few slow motes rising out of it
+    for (let i = 0; i < 6; i++) {
+      const t = (time * 0.16 + i / 6) % 1;
+      const mx = x + Math.sin(i * 2.4 + time * 0.5) * halfW * 0.8;
+      const my = bot - rise * t;
+      ctx.globalAlpha = (1 - t) * 0.5;
+      ctx.fillStyle = '#f8e2b0';
+      ctx.beginPath();
+      ctx.arc(mx, my, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -305,7 +526,7 @@ const Engine = (function () {
 
     if (state.walking) {
       const before = state.progress;
-      state.progress = Math.min(state.target, state.progress + dt * 0.42);
+      state.progress = Math.min(state.target, state.progress + dt * WALK_SPEED);
 
       if (state.progress > before) {
         // count real footsteps rather than frames, so the tally reads honestly
@@ -351,7 +572,9 @@ const Engine = (function () {
 
     drawParticles();
 
-    const scale = Math.min(w, h) * 0.14;
+    // Big enough to read the gait on a phone. At 0.14 the figure was a speck and
+    // all the walk-cycle work was invisible.
+    const scale = Math.min(w, h) * 0.23;
     const phase = state.time * (state.walking ? 7.4 : 0.75);
     drawPilgrim(w * Scenes.PILGRIM_X, groundY, scale, stage.figure, phase, state.walking, state.miracle);
 
@@ -409,6 +632,19 @@ const Engine = (function () {
     if (state.target > state.progress) state.walking = true;
   }
 
+  /* One Forward tap = one stride. The gate is reached after several of them, so
+     the walk is something you do rather than a jump cut to the question. */
+  function stride(limit) {
+    const stop = clamp(limit, 0, 1);
+    const next = Math.min(stop, state.progress + STRIDE);
+    if (next > state.progress + 0.0005) {
+      state.target = next;
+      state.walking = true;
+      return true;
+    }
+    return false;
+  }
+
   function passGate(i) { state.gatesPassed[i] = true; }
   function miracle() { state.miracleActive = true; }
   function pause(on) { state.paused = on; }
@@ -432,7 +668,7 @@ const Engine = (function () {
   }
 
   return {
-    init: init, load: load, walkTo: walkTo, passGate: passGate,
+    init: init, load: load, walkTo: walkTo, stride: stride, passGate: passGate,
     miracle: miracle, reset: reset, pause: pause, nextGate: nextGate,
     get progress() { return state.progress; },
     get walking() { return state.walking; },

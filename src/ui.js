@@ -18,6 +18,7 @@ const UI = (function () {
     sound: true,
     busy: false,           // true while a card is up or walking
     complete: false,
+    lastSlot: -1,          // slot the right answer used last, so it can move
   };
 
   let bible = { tab: 'read', view: 'chapters', book: null, chapter: 1, highlight: 0 };
@@ -198,7 +199,7 @@ const UI = (function () {
     const stage = STAGES[app.stageIndex];
     const { at, gate } = forwardTarget();
 
-    // already walking toward that point
+    // mid-stride: let the current one finish before taking another
     if (Engine.walking) return;
 
     if (Engine.progress >= at - 0.005) {
@@ -208,7 +209,8 @@ const UI = (function () {
       return;
     }
 
-    Engine.walkTo(at);
+    // one tap, one stride toward the gate
+    Engine.stride(at);
     Audio.resume();
     if (Engine.progress < 0.06) caption(stage.approach);
   }
@@ -223,6 +225,38 @@ const UI = (function () {
   function hideCard(which) {
     if (which === 'question') $('question-overlay').hidden = true;
     if (which === 'complete') $('complete-overlay').hidden = true;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     Option order
+
+     The right answer is stored as an index into the authored list, which
+     would otherwise always sit in the first slot. Shuffle the display order
+     every time the card opens, and keep the answer out of the slot it used
+     last, so tapping A out of habit never works twice running.
+     ═══════════════════════════════════════════════════════════════ */
+  function shuffleOptions(gate) {
+    const n = gate.options.length;
+    const order = gate.options.map(function (_, i) { return i; });
+
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = order[i];
+      order[i] = order[j];
+      order[j] = t;
+    }
+
+    // if the answer landed in the same slot as the previous question, move it
+    if (n > 1 && order.indexOf(gate.correct) === app.lastSlot) {
+      const from = order.indexOf(gate.correct);
+      const to = (from + 1 + Math.floor(Math.random() * (n - 1))) % n;
+      const t = order[to];
+      order[to] = order[from];
+      order[from] = t;
+    }
+
+    app.lastSlot = order.indexOf(gate.correct);
+    return order;
   }
 
   function openQuestion(gateIndex) {
@@ -240,20 +274,24 @@ const UI = (function () {
     const opts = $('q-options');
     opts.innerHTML = '';
     const letters = ['A', 'B', 'C', 'D'];
-    gate.options.forEach((text, i) => {
+    const order = shuffleOptions(gate);
+    app.order = order;
+
+    order.forEach((source, slot) => {
       const btn = document.createElement('button');
       btn.className = 'opt';
       btn.type = 'button';
-      btn.style.animationDelay = (i * 55) + 'ms';
+      btn.dataset.pick = String(source);
+      btn.style.animationDelay = (slot * 55) + 'ms';
       const key = document.createElement('span');
       key.className = 'opt-key';
-      key.textContent = letters[i];
+      key.textContent = letters[slot];
       const label = document.createElement('span');
       label.className = 'opt-text';
-      label.textContent = text;
+      label.textContent = gate.options[source];
       btn.appendChild(key);
       btn.appendChild(label);
-      btn.addEventListener('click', () => answer(i, gate, btn));
+      btn.addEventListener('click', () => answer(source, gate, btn));
       opts.appendChild(btn);
     });
 
@@ -273,9 +311,9 @@ const UI = (function () {
 
     if (pick === gate.correct) {
       app.busy = 'resolved';
-      buttons.forEach((b, i) => {
+      buttons.forEach((b) => {
         b.disabled = true;
-        if (i === gate.correct) b.classList.add('right');
+        if (Number(b.dataset.pick) === gate.correct) b.classList.add('right');
         else b.classList.add('faded');
       });
 
