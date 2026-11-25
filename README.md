@@ -1,10 +1,10 @@
-# Path of the Prophets — a Red Sea Bible journey
+# Holy Walk — a Red Sea Bible journey
 
 An offline, single-file Bible journey game. Eight prophets, sixteen questions,
 every verse quoted word for word from the King James Version, and the complete
 66-book KJV bundled for reading.
 
-Live at **https://red-sea.zlauder.dev**
+Live at **https://holy-walk.zlauder.dev** and **https://ace-718.github.io/holy-walk/**
 
 ## What it is
 
@@ -35,6 +35,8 @@ not quotations from any church publication, and the app says so.
 | `index.html` | The whole app: one file, fonts inlined, no external requests |
 | `src/` | The sources that `tools/build.py` inlines into `index.html` |
 | `kjv/` | 66 book files plus an index, fetched on demand by the reader |
+| `assets/` | The angel app icon, rendered at every size a home screen asks for |
+| `manifest.webmanifest` | Lets the app install to a phone home screen as "Holy Walk" |
 | `tools/build.py` | Bundles `src/` into the single `index.html` |
 | `tools/gen_verses.py` | Regenerates `src/verses.js` from the KJV (generated, do not edit) |
 | `tools/get_fonts.py` | Fetches the latin woff2 faces and emits them as data URIs |
@@ -45,9 +47,14 @@ Rebuild after editing anything in `src/`:
 python3 tools/build.py
 ```
 
-The scene art is drawn procedurally on a canvas — no images ship. The sound is
-synthesised with the Web Audio API — no audio files ship. The fonts are the only
-binary payload, and they are inlined.
+The scene art is drawn procedurally on a canvas. The sound is synthesised with
+the Web Audio API — no audio files ship. The fonts are inlined. The only images
+are the angel icon in `assets/`, generated from `assets/icon.svg`:
+
+```sh
+# render every icon size from the vector source
+node tools/build-icons.mjs
+```
 
 ## Credits
 
