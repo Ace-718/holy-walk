@@ -12,7 +12,10 @@ const Speech = (function () {
 
   let voice = null;
   let enabled = true;
-  let current = null;
+  // iOS and Android only allow speech that follows a real tap. The first
+  // utterance has to be spent inside a gesture, so a question that opens on its
+  // own a second later can still be read out.
+  let primed = false;
 
   // A warmer narrator is a better fit than the default system voice. Prefer a
   // known-good English voice, then any English one.
@@ -41,27 +44,73 @@ const Speech = (function () {
     setTimeout(pickVoice, 600);
   }
 
+  /* Spend the browser's one guaranteed utterance inside a user gesture. Silent,
+     because the player should not hear anything yet; it only unlocks the engine. */
+  function prime() {
+    if (!supported || primed) return;
+    primed = true;
+    try {
+      const u = new window.SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      u.rate = 1;
+      synth.speak(u);
+    } catch (e) { /* nothing to unlock */ }
+  }
+
   function stop() {
     if (!supported) return;
     try { synth.cancel(); } catch (e) { /* nothing speaking */ }
   }
 
-  function speak(text, opts) {
-    if (!supported || !enabled || !text) return false;
-    const o = opts || {};
-    stop();
+  function utterance(text, o, onFail) {
     const u = new window.SpeechSynthesisUtterance(text);
-    if (voice) u.voice = voice;
+    // A stale or unselectable voice throws here on some Android builds, and an
+    // exception at this point used to kill the whole utterance. Fall back to the
+    // engine's default voice instead of going silent.
+    if (voice) {
+      try { u.voice = voice; } catch (e) { voice = null; }
+    }
     u.lang = (voice && voice.lang) || 'en-GB';
     u.rate = o.rate || 0.92;      // unhurried, like a reader at a lectern
     u.pitch = o.pitch || 0.98;
     u.volume = o.volume == null ? 1 : o.volume;
-    if (o.onend) u.onend = o.onend;
-    if (o.onstart) u.onstart = o.onstart;
-    if (o.onerror) u.onerror = o.onerror;
-    current = u;
-    synth.speak(u);
-    return true;
+    u.onstart = function () {
+      if (o.onstart) o.onstart();
+    };
+    u.onend = function () {
+      if (o.onend) o.onend();
+    };
+    u.onerror = function (ev) {
+      // "interrupted"/"canceled" is us stopping it on purpose, not a failure.
+      const err = ev && ev.error;
+      if (err && err !== 'interrupted' && err !== 'canceled' && onFail) onFail();
+      if (o.onerror) o.onerror(ev);
+    };
+    return u;
+  }
+
+  /* Some browsers drop the utterance when speak() follows cancel() in the same
+     tick. Retrying on a timer would risk reading the question twice on a phone whose
+     voice is merely slow to wake, and hearing it twice is worse than hearing it
+     once — so the retry only happens on a real error event. The speaker button on
+     the card is always there if a voice does go quiet. */
+  function speak(text, opts) {
+    if (!supported || !enabled || !text) return false;
+    const o = opts || {};
+    stop();
+    let tries = 0;
+
+    function attempt() {
+      tries += 1;
+      const u = utterance(text, o, () => {
+        if (tries < 2) setTimeout(attempt, 140);
+        else if (o.onerror) o.onerror();
+      });
+      try { synth.speak(u); } catch (e) { return false; }
+      return true;
+    }
+
+    return attempt();
   }
 
   function speaking() {
@@ -79,6 +128,7 @@ const Speech = (function () {
     supported,
     speak,
     stop,
+    prime,
     speaking,
     setEnabled,
     isEnabled,

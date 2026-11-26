@@ -395,6 +395,360 @@ const Engine = (function () {
   }
 
   /* ═══════════════════════════════════════════════════════════════
+     COMPANIONS — the people and beasts who travel with the prophet.
+
+     Every journey in the text is a company, not a lone walker: Israel leaves
+     Egypt with a mixed multitude and its flocks, Noah boards with his sons and
+     the animals, Joshua's armed men and priests circle Jericho, David's brothers
+     and the army wait in the valley, and the crowds come out to the Jordan.
+     Drawn behind the pilgrim, in the same road perspective, so the walk reads as
+     a people on the move.
+     ═══════════════════════════════════════════════════════════════ */
+
+  // A companion is a simplified version of the pilgrim: same silhouette and gait,
+  // fewer details, so a group costs little to draw and never upstages him.
+  function drawCompanion(cx, baseY, scale, fig, phase, walking) {
+    const s = scale;
+    const amp = walking ? 0.42 : 0;
+    const nearThigh = amp * Math.sin(phase);
+    const farThigh = amp * Math.sin(phase + Math.PI);
+    const bob = walking ? -Math.abs(Math.cos(phase)) * s * 0.013 : 0;
+
+    const hipY = -s * 0.452;
+    const thighLen = s * 0.218;
+    const shinLen = s * 0.210;
+
+    ctx.save();
+    ctx.translate(cx, baseY + bob);
+    ctx.scale(-1, 1);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // shadow
+    const sh = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 0.26);
+    sh.addColorStop(0, 'rgba(0,0,0,.42)');
+    sh.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sh;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s * 0.26, s * 0.048, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    function leg(thigh, colour, shadeAmt) {
+      const kx = Math.sin(thigh) * thighLen;
+      const ky = hipY + Math.cos(thigh) * thighLen;
+      const shinAngle = thigh - (walking ? 0.55 * Math.max(0, Math.cos(thigh)) : 0.05);
+      const ax = kx + Math.sin(shinAngle) * shinLen;
+      const ay = ky + Math.cos(shinAngle) * shinLen;
+      ctx.strokeStyle = shade(colour, shadeAmt);
+      ctx.lineWidth = s * 0.066;
+      ctx.beginPath();
+      ctx.moveTo(0, hipY);
+      ctx.lineTo(kx, ky);
+      ctx.stroke();
+      ctx.lineWidth = s * 0.052;
+      ctx.beginPath();
+      ctx.moveTo(kx, ky);
+      ctx.lineTo(ax, ay);
+      ctx.stroke();
+      ctx.fillStyle = shade(fig.skin || '#b98a5e', shadeAmt * 0.5);
+      ctx.beginPath();
+      ctx.ellipse(ax + s * 0.022, ay, s * 0.032, s * 0.014, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // far leg, then the robe over it, then the near leg in front
+    leg(farThigh, fig.cloak || '#4a4032', -0.26);
+
+    // cloak, a shorter and stiller version of the pilgrim's
+    ctx.fillStyle = shade(fig.cloak || '#4a4032', -0.12);
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.05, -s * 0.745);
+    ctx.quadraticCurveTo(-s * 0.175, -s * 0.58, -s * 0.19, -s * 0.30);
+    ctx.quadraticCurveTo(-s * 0.10, -s * 0.27, -s * 0.045, -s * 0.31);
+    ctx.quadraticCurveTo(-s * 0.09, -s * 0.58, -s * 0.04, -s * 0.70);
+    ctx.closePath();
+    ctx.fill();
+
+    // tunic
+    const tg = ctx.createLinearGradient(-s * 0.08, -s * 0.73, s * 0.09, -s * 0.30);
+    tg.addColorStop(0, shade(fig.robe, 0.10));
+    tg.addColorStop(1, shade(fig.robe, -0.32));
+    ctx.fillStyle = tg;
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.082, -s * 0.735);
+    ctx.quadraticCurveTo(s * 0.010, -s * 0.785, s * 0.092, -s * 0.728);
+    ctx.quadraticCurveTo(s * 0.106, -s * 0.58, s * 0.090, -s * 0.465);
+    ctx.quadraticCurveTo(s * 0.100 + nearThigh * s * 0.06, -s * 0.37, s * 0.070 + nearThigh * s * 0.05, -s * 0.268);
+    ctx.lineTo(-s * 0.066 + nearThigh * s * 0.045, -s * 0.270);
+    ctx.quadraticCurveTo(-s * 0.100, -s * 0.40, -s * 0.092, -s * 0.50);
+    ctx.quadraticCurveTo(-s * 0.092, -s * 0.62, -s * 0.082, -s * 0.735);
+    ctx.closePath();
+    ctx.fill();
+
+    // belt
+    ctx.strokeStyle = 'rgba(140,104,52,.8)';
+    ctx.lineWidth = Math.max(1, s * 0.022);
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.086, -s * 0.492);
+    ctx.lineTo(s * 0.092, -s * 0.484);
+    ctx.stroke();
+
+    leg(nearThigh, fig.robe, -0.06);
+
+    // arm, swinging opposite the near leg
+    const swing = walking ? 0.34 * Math.sin(phase + Math.PI) : 0.05;
+    const shX = s * 0.026, shY = -s * 0.715;
+    const elbowX = shX + Math.sin(swing) * s * 0.148;
+    const elbowY = shY + Math.cos(swing) * s * 0.148;
+    const handX = elbowX + Math.sin(swing - 0.28) * s * 0.138;
+    const handY = elbowY + Math.cos(swing - 0.28) * s * 0.138;
+    ctx.strokeStyle = shade(fig.robe, -0.10);
+    ctx.lineWidth = s * 0.046;
+    ctx.beginPath();
+    ctx.moveTo(shX, shY);
+    ctx.lineTo(elbowX, elbowY);
+    ctx.lineTo(handX, handY);
+    ctx.stroke();
+    ctx.fillStyle = fig.skin || '#b98a5e';
+    ctx.beginPath();
+    ctx.arc(handX, handY, Math.max(0.9, s * 0.024), 0, Math.PI * 2);
+    ctx.fill();
+
+    // neck and head
+    ctx.strokeStyle = fig.skin || '#b98a5e';
+    ctx.lineWidth = s * 0.042;
+    ctx.beginPath();
+    ctx.moveTo(s * 0.004, -s * 0.745);
+    ctx.lineTo(s * 0.012, -s * 0.782);
+    ctx.stroke();
+
+    const hx = s * 0.018;
+    const hy = -s * 0.845;
+    const hr = s * 0.076;
+    const sg = ctx.createRadialGradient(hx - hr * 0.3, hy - hr * 0.4, hr * 0.2, hx, hy, hr * 1.2);
+    sg.addColorStop(0, shade(fig.skin || '#b98a5e', 0.14));
+    sg.addColorStop(1, shade(fig.skin || '#b98a5e', -0.14));
+    ctx.fillStyle = sg;
+    ctx.beginPath();
+    ctx.ellipse(hx, hy, hr * 0.94, hr, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // head covering, so the group reads as one people rather than clones
+    ctx.fillStyle = shade(fig.cloak || '#4a4032', 0.05);
+    ctx.beginPath();
+    ctx.moveTo(hx + hr * 0.60, hy - hr * 0.42);
+    ctx.quadraticCurveTo(hx + hr * 0.10, hy - hr * 1.22, hx - hr * 0.86, hy - hr * 0.66);
+    ctx.quadraticCurveTo(hx - hr * 1.02, hy + hr * 0.10, hx - hr * 0.86, hy + hr * 0.42);
+    ctx.quadraticCurveTo(hx - hr * 0.72, hy - hr * 0.10, hx - hr * 0.52, hy - hr * 0.42);
+    ctx.quadraticCurveTo(hx - hr * 0.10, hy - hr * 0.80, hx + hr * 0.60, hy - hr * 0.42);
+    ctx.closePath();
+    ctx.fill();
+
+    if (fig.beard) {
+      ctx.fillStyle = 'rgba(92,84,70,.95)';
+      ctx.beginPath();
+      ctx.moveTo(hx - hr * 0.24, hy + hr * 0.56);
+      ctx.quadraticCurveTo(hx + hr * 0.18, hy + hr * 0.46, hx + hr * 0.50, hy + hr * 0.70);
+      ctx.quadraticCurveTo(hx + hr * 0.40, hy + hr * 1.24, hx + hr * 0.16, hy + hr * 1.86);
+      ctx.quadraticCurveTo(hx - hr * 0.12, hy + hr * 1.24, hx - hr * 0.32, hy + hr * 0.84);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // a lit eye, so the head reads as a face at phone size
+    ctx.fillStyle = 'rgba(38,26,18,.8)';
+    ctx.beginPath();
+    ctx.ellipse(hx + hr * 0.46, hy - hr * 0.06, hr * 0.10, hr * 0.075, -0.25, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  /* ── The beasts that travel with the company.
+
+     A sheep is a woolly barrel on four short legs with its head low, a camel is the
+     same idea tall with a hump and a raised neck. Both are drawn facing the road
+     ahead, in the same mirror as the people, so the herd moves the same way they do.
+     ─────────────────────────────────────────────────────────────── */
+  function drawAnimal(cx, baseY, scale, kind, phase, walking) {
+    const s = scale;
+    const camel = kind === 'camel';
+    const bob = walking ? -Math.abs(Math.cos(phase * 2)) * s * 0.012 : 0;
+
+    // body height above the ground: a camel carries its barrel high on long legs
+    const legLen = s * (camel ? 0.30 : 0.13);
+    const bodyH = s * (camel ? 0.13 : 0.115);
+    const bodyW = s * (camel ? 0.20 : 0.155);
+    const bodyY = -(legLen + bodyH * 0.55) + bob;
+
+    const fleece = camel ? '#8a7355' : '#c8c1b0';
+    const fleeceDark = camel ? '#6b563d' : '#a49c8c';
+
+    ctx.save();
+    ctx.translate(cx, baseY);
+    ctx.scale(-1, 1);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // shadow on the ground
+    const sh = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 0.28);
+    sh.addColorStop(0, 'rgba(0,0,0,.34)');
+    sh.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sh;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s * 0.28, s * 0.05, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // four legs, the far pair drawn darker behind the body
+    const hips = [-bodyW * 0.62, bodyW * 0.62];
+    [1, 0].forEach(function (far) {
+      hips.forEach(function (hx, i) {
+        const swing = walking ? Math.sin(phase + i * Math.PI) * s * (camel ? 0.045 : 0.028) : 0;
+        ctx.strokeStyle = far ? shade(fleeceDark, -0.24) : fleeceDark;
+        ctx.lineWidth = Math.max(1.1, s * (camel ? 0.030 : 0.034));
+        ctx.beginPath();
+        ctx.moveTo(hx, bodyY + bodyH * 0.45);
+        ctx.lineTo(hx + swing, -s * 0.012);
+        ctx.stroke();
+        // a small hoof
+        ctx.fillStyle = far ? shade(fleeceDark, -0.4) : shade(fleeceDark, -0.2);
+        ctx.beginPath();
+        ctx.ellipse(hx + swing, -s * 0.008, s * 0.020, s * 0.010, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    });
+
+    // the barrel of the body
+    const bg = ctx.createLinearGradient(0, bodyY - bodyH, 0, bodyY + bodyH);
+    bg.addColorStop(0, shade(fleece, 0.10));
+    bg.addColorStop(1, shade(fleece, -0.18));
+    ctx.fillStyle = bg;
+
+    if (camel) {
+      ctx.beginPath();
+      ctx.ellipse(0, bodyY, bodyW, bodyH, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // the hump, sitting on the back of the barrel
+      ctx.fillStyle = shade(fleece, 0.06);
+      ctx.beginPath();
+      ctx.moveTo(-bodyW * 0.58, bodyY - bodyH * 0.55);
+      ctx.quadraticCurveTo(-bodyW * 0.08, bodyY - bodyH * 2.15, bodyW * 0.44, bodyY - bodyH * 0.68);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      // A sheep: bumps around the body first, then the body over them, so the
+      // silhouette comes out fleecy instead of a smooth bean.
+      ctx.fillStyle = shade(fleece, -0.04);
+      for (let k = 0; k < 10; k++) {
+        const a = (k / 10) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * bodyW * 0.80, bodyY + Math.sin(a) * bodyH * 0.74, s * 0.042, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.ellipse(0, bodyY, bodyW, bodyH, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // neck: short and level for a sheep, long and rising for a camel
+    const neckFromX = bodyW * 0.62;
+    const neckFromY = bodyY - bodyH * 0.30;
+    const neckToX = camel ? bodyW * 1.32 : bodyW * 1.06;
+    const neckToY = camel ? bodyY - bodyH * 2.30 : bodyY - bodyH * 0.92;
+    ctx.strokeStyle = shade(fleece, -0.06);
+    ctx.lineWidth = Math.max(1.8, s * (camel ? 0.062 : 0.056));
+    ctx.beginPath();
+    ctx.moveTo(neckFromX, neckFromY);
+    ctx.quadraticCurveTo(neckToX - s * 0.02, neckFromY - (neckFromY - neckToY) * 0.45, neckToX, neckToY);
+    ctx.stroke();
+
+    // head, and for a sheep the woolly crown over it
+    ctx.fillStyle = shade(fleece, 0.02);
+    ctx.beginPath();
+    ctx.ellipse(neckToX + s * 0.030, neckToY - s * 0.004, s * 0.048, s * 0.036, -0.30, 0, Math.PI * 2);
+    ctx.fill();
+    // muzzle
+    ctx.fillStyle = shade(fleece, -0.24);
+    ctx.beginPath();
+    ctx.ellipse(neckToX + s * 0.068, neckToY + s * 0.012, s * 0.020, s * 0.015, -0.20, 0, Math.PI * 2);
+    ctx.fill();
+    // ear
+    ctx.fillStyle = shade(fleece, -0.10);
+    ctx.beginPath();
+    ctx.ellipse(neckToX + s * 0.006, neckToY - s * 0.034, s * 0.019, s * 0.010, -0.65, 0, Math.PI * 2);
+    ctx.fill();
+
+    // tail
+    ctx.strokeStyle = shade(fleece, -0.16);
+    ctx.lineWidth = Math.max(0.9, s * 0.014);
+    ctx.beginPath();
+    ctx.moveTo(-bodyW * 0.92, bodyY - bodyH * 0.28);
+    ctx.quadraticCurveTo(-bodyW * 1.18, bodyY - bodyH * 0.05, -bodyW * 1.10, bodyY + bodyH * 0.42);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  /* The company travels with him: each member holds a fixed place relative to the
+     pilgrim, so the group keeps its shape whatever the road progress. dx is how far
+     ahead of him across the screen — the direction they are all walking — and dy how
+     far back up the road, which makes them a little smaller and higher, the way
+     distance reads in this perspective. Every member is clamped to the canvas, so the
+     group never walks off the edge when he starts at the right of the screen.
+
+     On the finale the whole company goes in with him: each member walks the same
+     line to the landmark, spread out a little, so the ark or the sea swallows a
+     procession rather than one man. */
+  function drawCompany(company, w, h, progress, phase, walking, alpha, finale, finaleT) {
+    if (!company || !company.length) return;
+    const groundY = h * Scenes.GROUND;
+    const base = Math.min(w, h) * 0.23;
+    const px = w * Scenes.pilgrimX(progress);
+    const entering = !!(finale && finaleT > 0);
+    const e = entering ? easeInOut(clamp(finaleT, 0, 1)) : 0;
+
+    // furthest back first, so nearer figures overlap the ones behind them
+    const ordered = company.slice().sort(function (a, b) { return (b.dy || 0) - (a.dy || 0); });
+    ordered.forEach(function (c, i) {
+      const dx = c.dx || 0;
+      const dy = c.dy || 0;
+      let size = base * (c.scale || 0.8) * (1 - dy * 1.1);
+      // ahead of him along the road, kept clear of the screen edges
+      const margin = size * 0.42;
+      let x = Math.max(margin, Math.min(w - margin, px - w * dx));
+      // further up the road sits higher on screen, and shrinks a little with distance
+      let y = groundY - h * dy * 1.15;
+      let a = alpha * (0.92 - dy * 1.6);
+
+      if (entering) {
+        // Same walk as the pilgrim: along the ground and up into the landmark,
+        // shrinking as they go in. Spread across the landmark's width so they do not
+        // stack into a single column.
+        const spread = (i - (ordered.length - 1) / 2) * 0.035;
+        const tx = w * (finale.x + spread);
+        const ty = h * (Scenes.GROUND - finale.rise * (0.92 - Math.abs(spread) * 2.4));
+        x = lerp(x, tx, e);
+        y = lerp(y, ty, e);
+        size = size * (1 - finale.shrink * e);
+        // they fade a touch after he does, so the eye follows him in first
+        const into = clamp((finaleT - 0.62) / 0.38, 0, 1);
+        a = a * (1 - finale.fade * into * into);
+      }
+
+      if (a <= 0.01) return;
+      const gait = walking ? phase + i * 0.9 : phase * 0.4 + i;
+      ctx.globalAlpha = a;
+      if (c.kind === 'sheep' || c.kind === 'camel') {
+        drawAnimal(x, y, size, c.kind, gait, walking);
+      } else {
+        drawCompanion(x, y, size, c, gait, walking);
+      }
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
      GATE — a curtain of light across the road ahead.
 
      It stands between the pilgrim and the destination, on the road, so it
@@ -644,6 +998,14 @@ const Engine = (function () {
       palpha = 1 - f.fade * into * into;
     }
 
+    // The company travels with him, behind him on the road. Drawn before the
+    // pilgrim so he stays the figure the eye lands on, and it walks into the
+    // landmark with him on the finale.
+    if (stage.company && stage.company.length) {
+      drawCompany(stage.company, w, h, state.progress, phase, striding, 1,
+        state.finale, state.finaleT);
+    }
+
     ctx.globalAlpha = Math.max(0, palpha);
     drawPilgrim(px, py, pscale, stage.figure, phase, striding, state.miracle);
     ctx.globalAlpha = 1;
@@ -711,6 +1073,16 @@ const Engine = (function () {
     state.dust = [];
     state.sparks = [];
     state.stepAcc = 0;
+    // The finale is geometry for the *previous* scene. Left set, the pilgrim keeps
+    // the old rise and fade: coming from the Red Sea (rise 0.40) into the ark left
+    // Noah hanging in mid-air, and a finaleT of 1 also made every Forward tap a
+    // no-op, so the stage could not be played at all.
+    state.finale = null;
+    state.finaleT = 0;
+    state.finaleOn = false;
+    state.lift = 0;
+    state.liftTarget = 0;
+    state.paused = false;
   }
 
   function walkTo(target) {

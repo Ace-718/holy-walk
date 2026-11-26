@@ -232,6 +232,10 @@ const UI = (function () {
     if (app.busy || app.complete) return;
     // The finale walk is not steerable: he is already on his way in.
     if (Engine.finaleT > 0) return;
+    // Every Forward tap is a gesture, and the question card opens on one of them.
+    // Spending the browser's first utterance here is what lets the narrator read
+    // that card out without a second tap.
+    Speech.prime();
     const stage = STAGES[app.stageIndex];
     const { at, gate } = forwardTarget();
 
@@ -447,6 +451,17 @@ const UI = (function () {
 
     showCard('question');
     $('q-prompt').scrollIntoView({ block: 'nearest' });
+
+    // Read the question and its answers without being asked. The gate opens on
+    // the tap that walks into it, so the gesture that unlocked audio is still
+    // fresh here; a short beat lets the card animate in first.
+    if (app.voice) {
+      clearTimeout(openQuestion._speak);
+      openQuestion._speak = setTimeout(() => {
+        if (app.busy !== true || $('question-overlay').hidden) return;
+        sayAloud(narrationFor(gate, stage), hear);
+      }, 520);
+    }
   }
 
   function answer(pick, gate, btn) {

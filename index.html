@@ -1737,6 +1737,15 @@ const STAGES = [
     scene: 'red-sea',
     palette: { sky: ['#0b1a2e', '#123049'], land: '#1a2233', accent: '#3fa9c9' },
     figure: { robe: '#b8452f', cloak: '#7c2d1c', skin: '#c98f63', staff: true, beard: true },
+    // Exodus 12:37–38 — six hundred thousand on foot, and a mixed multitude.
+    company: [
+      { kind: 'folk', robe: '#7d6a4f', cloak: '#54452f', skin: '#b98a5e', scale: 0.86, dx: 0.085, dy: 0.006, beard: false },
+      { kind: 'folk', robe: '#6b6f8a', cloak: '#464a63', skin: '#c1916a', scale: 0.82, dx: 0.135, dy: 0.016, beard: true },
+      { kind: 'folk', robe: '#8a6a52', cloak: '#5c4633', skin: '#a97a52', scale: 0.80, dx: 0.180, dy: 0.026, beard: false },
+      { kind: 'child', robe: '#93705a', cloak: '#63503f', skin: '#c99a6e', scale: 0.55, dx: 0.045, dy: 0.030, beard: false },
+      { kind: 'sheep', scale: 0.60, dx: 0.105, dy: 0.036 },
+      { kind: 'sheep', scale: 0.52, dx: 0.205, dy: 0.012 },
+    ],
     intro: 'Walk toward the water. Pharaoh’s army is behind you.',
     approach: 'The sea stands in front. The people are afraid.',
     gates: [
@@ -1785,6 +1794,16 @@ const STAGES = [
     scene: 'ark',
     palette: { sky: ['#141c26', '#2a3038'], land: '#1b2029', accent: '#7d8f6a' },
     figure: { robe: '#6b7f4a', cloak: '#3f5230', skin: '#c08e62', staff: false, beard: true },
+    // Genesis 6:18–20, 7:7 — his sons and their wives, and the beasts with them.
+    company: [
+      { kind: 'folk', robe: '#5d6b57', cloak: '#3d4738', skin: '#bb8a61', scale: 0.86, dx: 0.080, dy: 0.006, beard: true },
+      { kind: 'folk', robe: '#7a6a58', cloak: '#514636', skin: '#c79a70', scale: 0.83, dx: 0.132, dy: 0.018, beard: false },
+      { kind: 'folk', robe: '#6d5f7d', cloak: '#483e54', skin: '#b3865f', scale: 0.81, dx: 0.182, dy: 0.030, beard: false },
+      { kind: 'child', robe: '#8a7a63', cloak: '#5b5142', skin: '#cb9d72', scale: 0.54, dx: 0.040, dy: 0.034, beard: false },
+      { kind: 'sheep', scale: 0.60, dx: 0.100, dy: 0.040 },
+      { kind: 'sheep', scale: 0.52, dx: 0.215, dy: 0.014 },
+      { kind: 'camel', scale: 0.80, dx: 0.245, dy: 0.044 },
+    ],
     intro: 'Walk toward the ark. The sky is already heavy.',
     approach: 'Rain begins to fall. The door is still open.',
     gates: [
@@ -1833,6 +1852,14 @@ const STAGES = [
     scene: 'jericho',
     palette: { sky: ['#2a1c22', '#3d2a24'], land: '#241d22', accent: '#d9a94e' },
     figure: { robe: '#8a6a3a', cloak: '#5a4222', skin: '#c9905f', staff: true, beard: true },
+    // Joshua 6:7–9 — the armed men pass before the ark, the priests with trumpets,
+    // and the rear guard behind.
+    company: [
+      { kind: 'soldier', robe: '#6a5a3e', cloak: '#463a26', skin: '#bb8a60', scale: 0.86, dx: 0.078, dy: 0.006, beard: true },
+      { kind: 'soldier', robe: '#75603f', cloak: '#4e4028', skin: '#c1916a', scale: 0.83, dx: 0.130, dy: 0.018, beard: false },
+      { kind: 'priest', robe: '#a89463', cloak: '#6f5f3c', skin: '#c39668', scale: 0.82, dx: 0.180, dy: 0.030, beard: true },
+      { kind: 'folk', robe: '#7f6a4c', cloak: '#57462f', skin: '#ab7d55', scale: 0.79, dx: 0.042, dy: 0.036, beard: false },
+    ],
     intro: 'Walk toward Jericho. Its gates are shut fast.',
     approach: 'The wall rises ahead, thick and unbroken.',
     gates: [
@@ -1881,6 +1908,13 @@ const STAGES = [
     scene: 'elah',
     palette: { sky: ['#1d2a2e', '#38484a'], land: '#222a2c', accent: '#8fb8a0' },
     figure: { robe: '#3f6f9a', cloak: '#2b4c6b', skin: '#d09a68', staff: false, beard: false },
+    // 1 Samuel 17:20 — David leaves the sheep with a keeper and runs to the army.
+    company: [
+      { kind: 'soldier', robe: '#55637a', cloak: '#374254', skin: '#bb8a60', scale: 0.84, dx: 0.082, dy: 0.008, beard: true },
+      { kind: 'soldier', robe: '#4c5a70', cloak: '#313b4b', skin: '#c49468', scale: 0.81, dx: 0.140, dy: 0.020, beard: true },
+      { kind: 'sheep', scale: 0.56, dx: 0.045, dy: 0.032 },
+      { kind: 'sheep', scale: 0.50, dx: 0.200, dy: 0.012 },
+    ],
     intro: 'Walk into the valley. Something enormous waits on the ridge.',
     approach: 'Goliath’s voice rolls down the slope.',
     gates: [
@@ -1929,6 +1963,14 @@ const STAGES = [
     scene: 'carmel',
     palette: { sky: ['#2b1d16', '#4a2f1c'], land: '#231a16', accent: '#e8863c' },
     figure: { robe: '#8a5a2e', cloak: '#4f3418', skin: '#c08a5a', staff: true, beard: true },
+    // 1 Kings 18:21–24 — Elijah speaks to all the people, and the prophets of Baal
+    // stand by their altar.
+    company: [
+      { kind: 'folk', robe: '#6f5c3c', cloak: '#4b3d26', skin: '#b9875c', scale: 0.85, dx: 0.080, dy: 0.006, beard: true },
+      { kind: 'folk', robe: '#5f6a4c', cloak: '#404934', skin: '#c3946a', scale: 0.82, dx: 0.132, dy: 0.020, beard: false },
+      { kind: 'priest', robe: '#6b4a63', cloak: '#47303f', skin: '#b2835a', scale: 0.80, dx: 0.180, dy: 0.032, beard: true },
+      { kind: 'folk', robe: '#7a6a52', cloak: '#544733', skin: '#ab7c54', scale: 0.78, dx: 0.044, dy: 0.038, beard: false },
+    ],
     intro: 'Climb toward Carmel. The altar stands unlit.',
     approach: 'Two altars. One God will answer with fire.',
     gates: [
@@ -1977,6 +2019,12 @@ const STAGES = [
     scene: 'nineveh',
     palette: { sky: ['#10202c', '#1d3a44'], land: '#141d26', accent: '#5aa8b8' },
     figure: { robe: '#4a7a86', cloak: '#2e5460', skin: '#c8905f', staff: false, beard: true },
+    // Jonah 1:3–5 — the ship, its sailors, and the cargo they threw overboard.
+    company: [
+      { kind: 'sailor', robe: '#3f6070', cloak: '#2b4450', skin: '#bb8a60', scale: 0.85, dx: 0.080, dy: 0.008, beard: true },
+      { kind: 'sailor', robe: '#466a76', cloak: '#304b55', skin: '#c49167', scale: 0.82, dx: 0.138, dy: 0.022, beard: false },
+      { kind: 'sheep', scale: 0.50, dx: 0.196, dy: 0.014 },
+    ],
     intro: 'Walk toward the sea. A ship waits at Joppa.',
     approach: 'The storm rises. The sea will not be still.',
     gates: [
@@ -2025,6 +2073,12 @@ const STAGES = [
     scene: 'den',
     palette: { sky: ['#151222', '#241c33'], land: '#1a1622', accent: '#9a7ec9' },
     figure: { robe: '#5a4a8a', cloak: '#382a5e', skin: '#c08a62', staff: false, beard: true },
+    // Daniel 6:10–11 — he prays with his windows open; the men who watched him
+    // stand outside.
+    company: [
+      { kind: 'folk', robe: '#5b5470', cloak: '#3e3950', skin: '#b98860', scale: 0.84, dx: 0.086, dy: 0.010, beard: true },
+      { kind: 'folk', robe: '#4f5470', cloak: '#363a50', skin: '#c29369', scale: 0.80, dx: 0.148, dy: 0.026, beard: false },
+    ],
     intro: 'Walk toward the den. The stone is already sealed.',
     approach: 'Something moves in the dark below the stone.',
     gates: [
@@ -2073,6 +2127,12 @@ const STAGES = [
     scene: 'jordan',
     palette: { sky: ['#1a2430', '#33465a'], land: '#1e2833', accent: '#c9b98a' },
     figure: { robe: '#8a7a52', cloak: '#5a4e32', skin: '#c08a5f', staff: true, beard: true },
+    // Matthew 3:5–6 — Jerusalem, all Judea and the region round about came to him.
+    company: [
+      { kind: 'folk', robe: '#6f6350', cloak: '#4b4234', skin: '#bb8a61', scale: 0.85, dx: 0.080, dy: 0.006, beard: true },
+      { kind: 'folk', robe: '#7a6c55', cloak: '#524936', skin: '#c4946a', scale: 0.82, dx: 0.136, dy: 0.020, beard: false },
+      { kind: 'folk', robe: '#6b6358', cloak: '#47423a', skin: '#a97a52', scale: 0.80, dx: 0.186, dy: 0.032, beard: false },
+    ],
     intro: 'Walk toward the Jordan. Someone is waiting in the water.',
     approach: 'The heavens are about to open.',
     gates: [
@@ -2501,7 +2561,10 @@ const Speech = (function () {
 
   let voice = null;
   let enabled = true;
-  let current = null;
+  // iOS and Android only allow speech that follows a real tap. The first
+  // utterance has to be spent inside a gesture, so a question that opens on its
+  // own a second later can still be read out.
+  let primed = false;
 
   // A warmer narrator is a better fit than the default system voice. Prefer a
   // known-good English voice, then any English one.
@@ -2530,27 +2593,73 @@ const Speech = (function () {
     setTimeout(pickVoice, 600);
   }
 
+  /* Spend the browser's one guaranteed utterance inside a user gesture. Silent,
+     because the player should not hear anything yet; it only unlocks the engine. */
+  function prime() {
+    if (!supported || primed) return;
+    primed = true;
+    try {
+      const u = new window.SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      u.rate = 1;
+      synth.speak(u);
+    } catch (e) { /* nothing to unlock */ }
+  }
+
   function stop() {
     if (!supported) return;
     try { synth.cancel(); } catch (e) { /* nothing speaking */ }
   }
 
-  function speak(text, opts) {
-    if (!supported || !enabled || !text) return false;
-    const o = opts || {};
-    stop();
+  function utterance(text, o, onFail) {
     const u = new window.SpeechSynthesisUtterance(text);
-    if (voice) u.voice = voice;
+    // A stale or unselectable voice throws here on some Android builds, and an
+    // exception at this point used to kill the whole utterance. Fall back to the
+    // engine's default voice instead of going silent.
+    if (voice) {
+      try { u.voice = voice; } catch (e) { voice = null; }
+    }
     u.lang = (voice && voice.lang) || 'en-GB';
     u.rate = o.rate || 0.92;      // unhurried, like a reader at a lectern
     u.pitch = o.pitch || 0.98;
     u.volume = o.volume == null ? 1 : o.volume;
-    if (o.onend) u.onend = o.onend;
-    if (o.onstart) u.onstart = o.onstart;
-    if (o.onerror) u.onerror = o.onerror;
-    current = u;
-    synth.speak(u);
-    return true;
+    u.onstart = function () {
+      if (o.onstart) o.onstart();
+    };
+    u.onend = function () {
+      if (o.onend) o.onend();
+    };
+    u.onerror = function (ev) {
+      // "interrupted"/"canceled" is us stopping it on purpose, not a failure.
+      const err = ev && ev.error;
+      if (err && err !== 'interrupted' && err !== 'canceled' && onFail) onFail();
+      if (o.onerror) o.onerror(ev);
+    };
+    return u;
+  }
+
+  /* Some browsers drop the utterance when speak() follows cancel() in the same
+     tick. Retrying on a timer would risk reading the question twice on a phone whose
+     voice is merely slow to wake, and hearing it twice is worse than hearing it
+     once — so the retry only happens on a real error event. The speaker button on
+     the card is always there if a voice does go quiet. */
+  function speak(text, opts) {
+    if (!supported || !enabled || !text) return false;
+    const o = opts || {};
+    stop();
+    let tries = 0;
+
+    function attempt() {
+      tries += 1;
+      const u = utterance(text, o, () => {
+        if (tries < 2) setTimeout(attempt, 140);
+        else if (o.onerror) o.onerror();
+      });
+      try { synth.speak(u); } catch (e) { return false; }
+      return true;
+    }
+
+    return attempt();
   }
 
   function speaking() {
@@ -2568,6 +2677,7 @@ const Speech = (function () {
     supported,
     speak,
     stop,
+    prime,
     speaking,
     setEnabled,
     isEnabled,
@@ -4688,6 +4798,360 @@ const Engine = (function () {
   }
 
   /* ═══════════════════════════════════════════════════════════════
+     COMPANIONS — the people and beasts who travel with the prophet.
+
+     Every journey in the text is a company, not a lone walker: Israel leaves
+     Egypt with a mixed multitude and its flocks, Noah boards with his sons and
+     the animals, Joshua's armed men and priests circle Jericho, David's brothers
+     and the army wait in the valley, and the crowds come out to the Jordan.
+     Drawn behind the pilgrim, in the same road perspective, so the walk reads as
+     a people on the move.
+     ═══════════════════════════════════════════════════════════════ */
+
+  // A companion is a simplified version of the pilgrim: same silhouette and gait,
+  // fewer details, so a group costs little to draw and never upstages him.
+  function drawCompanion(cx, baseY, scale, fig, phase, walking) {
+    const s = scale;
+    const amp = walking ? 0.42 : 0;
+    const nearThigh = amp * Math.sin(phase);
+    const farThigh = amp * Math.sin(phase + Math.PI);
+    const bob = walking ? -Math.abs(Math.cos(phase)) * s * 0.013 : 0;
+
+    const hipY = -s * 0.452;
+    const thighLen = s * 0.218;
+    const shinLen = s * 0.210;
+
+    ctx.save();
+    ctx.translate(cx, baseY + bob);
+    ctx.scale(-1, 1);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // shadow
+    const sh = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 0.26);
+    sh.addColorStop(0, 'rgba(0,0,0,.42)');
+    sh.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sh;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s * 0.26, s * 0.048, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    function leg(thigh, colour, shadeAmt) {
+      const kx = Math.sin(thigh) * thighLen;
+      const ky = hipY + Math.cos(thigh) * thighLen;
+      const shinAngle = thigh - (walking ? 0.55 * Math.max(0, Math.cos(thigh)) : 0.05);
+      const ax = kx + Math.sin(shinAngle) * shinLen;
+      const ay = ky + Math.cos(shinAngle) * shinLen;
+      ctx.strokeStyle = shade(colour, shadeAmt);
+      ctx.lineWidth = s * 0.066;
+      ctx.beginPath();
+      ctx.moveTo(0, hipY);
+      ctx.lineTo(kx, ky);
+      ctx.stroke();
+      ctx.lineWidth = s * 0.052;
+      ctx.beginPath();
+      ctx.moveTo(kx, ky);
+      ctx.lineTo(ax, ay);
+      ctx.stroke();
+      ctx.fillStyle = shade(fig.skin || '#b98a5e', shadeAmt * 0.5);
+      ctx.beginPath();
+      ctx.ellipse(ax + s * 0.022, ay, s * 0.032, s * 0.014, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // far leg, then the robe over it, then the near leg in front
+    leg(farThigh, fig.cloak || '#4a4032', -0.26);
+
+    // cloak, a shorter and stiller version of the pilgrim's
+    ctx.fillStyle = shade(fig.cloak || '#4a4032', -0.12);
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.05, -s * 0.745);
+    ctx.quadraticCurveTo(-s * 0.175, -s * 0.58, -s * 0.19, -s * 0.30);
+    ctx.quadraticCurveTo(-s * 0.10, -s * 0.27, -s * 0.045, -s * 0.31);
+    ctx.quadraticCurveTo(-s * 0.09, -s * 0.58, -s * 0.04, -s * 0.70);
+    ctx.closePath();
+    ctx.fill();
+
+    // tunic
+    const tg = ctx.createLinearGradient(-s * 0.08, -s * 0.73, s * 0.09, -s * 0.30);
+    tg.addColorStop(0, shade(fig.robe, 0.10));
+    tg.addColorStop(1, shade(fig.robe, -0.32));
+    ctx.fillStyle = tg;
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.082, -s * 0.735);
+    ctx.quadraticCurveTo(s * 0.010, -s * 0.785, s * 0.092, -s * 0.728);
+    ctx.quadraticCurveTo(s * 0.106, -s * 0.58, s * 0.090, -s * 0.465);
+    ctx.quadraticCurveTo(s * 0.100 + nearThigh * s * 0.06, -s * 0.37, s * 0.070 + nearThigh * s * 0.05, -s * 0.268);
+    ctx.lineTo(-s * 0.066 + nearThigh * s * 0.045, -s * 0.270);
+    ctx.quadraticCurveTo(-s * 0.100, -s * 0.40, -s * 0.092, -s * 0.50);
+    ctx.quadraticCurveTo(-s * 0.092, -s * 0.62, -s * 0.082, -s * 0.735);
+    ctx.closePath();
+    ctx.fill();
+
+    // belt
+    ctx.strokeStyle = 'rgba(140,104,52,.8)';
+    ctx.lineWidth = Math.max(1, s * 0.022);
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.086, -s * 0.492);
+    ctx.lineTo(s * 0.092, -s * 0.484);
+    ctx.stroke();
+
+    leg(nearThigh, fig.robe, -0.06);
+
+    // arm, swinging opposite the near leg
+    const swing = walking ? 0.34 * Math.sin(phase + Math.PI) : 0.05;
+    const shX = s * 0.026, shY = -s * 0.715;
+    const elbowX = shX + Math.sin(swing) * s * 0.148;
+    const elbowY = shY + Math.cos(swing) * s * 0.148;
+    const handX = elbowX + Math.sin(swing - 0.28) * s * 0.138;
+    const handY = elbowY + Math.cos(swing - 0.28) * s * 0.138;
+    ctx.strokeStyle = shade(fig.robe, -0.10);
+    ctx.lineWidth = s * 0.046;
+    ctx.beginPath();
+    ctx.moveTo(shX, shY);
+    ctx.lineTo(elbowX, elbowY);
+    ctx.lineTo(handX, handY);
+    ctx.stroke();
+    ctx.fillStyle = fig.skin || '#b98a5e';
+    ctx.beginPath();
+    ctx.arc(handX, handY, Math.max(0.9, s * 0.024), 0, Math.PI * 2);
+    ctx.fill();
+
+    // neck and head
+    ctx.strokeStyle = fig.skin || '#b98a5e';
+    ctx.lineWidth = s * 0.042;
+    ctx.beginPath();
+    ctx.moveTo(s * 0.004, -s * 0.745);
+    ctx.lineTo(s * 0.012, -s * 0.782);
+    ctx.stroke();
+
+    const hx = s * 0.018;
+    const hy = -s * 0.845;
+    const hr = s * 0.076;
+    const sg = ctx.createRadialGradient(hx - hr * 0.3, hy - hr * 0.4, hr * 0.2, hx, hy, hr * 1.2);
+    sg.addColorStop(0, shade(fig.skin || '#b98a5e', 0.14));
+    sg.addColorStop(1, shade(fig.skin || '#b98a5e', -0.14));
+    ctx.fillStyle = sg;
+    ctx.beginPath();
+    ctx.ellipse(hx, hy, hr * 0.94, hr, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // head covering, so the group reads as one people rather than clones
+    ctx.fillStyle = shade(fig.cloak || '#4a4032', 0.05);
+    ctx.beginPath();
+    ctx.moveTo(hx + hr * 0.60, hy - hr * 0.42);
+    ctx.quadraticCurveTo(hx + hr * 0.10, hy - hr * 1.22, hx - hr * 0.86, hy - hr * 0.66);
+    ctx.quadraticCurveTo(hx - hr * 1.02, hy + hr * 0.10, hx - hr * 0.86, hy + hr * 0.42);
+    ctx.quadraticCurveTo(hx - hr * 0.72, hy - hr * 0.10, hx - hr * 0.52, hy - hr * 0.42);
+    ctx.quadraticCurveTo(hx - hr * 0.10, hy - hr * 0.80, hx + hr * 0.60, hy - hr * 0.42);
+    ctx.closePath();
+    ctx.fill();
+
+    if (fig.beard) {
+      ctx.fillStyle = 'rgba(92,84,70,.95)';
+      ctx.beginPath();
+      ctx.moveTo(hx - hr * 0.24, hy + hr * 0.56);
+      ctx.quadraticCurveTo(hx + hr * 0.18, hy + hr * 0.46, hx + hr * 0.50, hy + hr * 0.70);
+      ctx.quadraticCurveTo(hx + hr * 0.40, hy + hr * 1.24, hx + hr * 0.16, hy + hr * 1.86);
+      ctx.quadraticCurveTo(hx - hr * 0.12, hy + hr * 1.24, hx - hr * 0.32, hy + hr * 0.84);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // a lit eye, so the head reads as a face at phone size
+    ctx.fillStyle = 'rgba(38,26,18,.8)';
+    ctx.beginPath();
+    ctx.ellipse(hx + hr * 0.46, hy - hr * 0.06, hr * 0.10, hr * 0.075, -0.25, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  /* ── The beasts that travel with the company.
+
+     A sheep is a woolly barrel on four short legs with its head low, a camel is the
+     same idea tall with a hump and a raised neck. Both are drawn facing the road
+     ahead, in the same mirror as the people, so the herd moves the same way they do.
+     ─────────────────────────────────────────────────────────────── */
+  function drawAnimal(cx, baseY, scale, kind, phase, walking) {
+    const s = scale;
+    const camel = kind === 'camel';
+    const bob = walking ? -Math.abs(Math.cos(phase * 2)) * s * 0.012 : 0;
+
+    // body height above the ground: a camel carries its barrel high on long legs
+    const legLen = s * (camel ? 0.30 : 0.13);
+    const bodyH = s * (camel ? 0.13 : 0.115);
+    const bodyW = s * (camel ? 0.20 : 0.155);
+    const bodyY = -(legLen + bodyH * 0.55) + bob;
+
+    const fleece = camel ? '#8a7355' : '#c8c1b0';
+    const fleeceDark = camel ? '#6b563d' : '#a49c8c';
+
+    ctx.save();
+    ctx.translate(cx, baseY);
+    ctx.scale(-1, 1);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // shadow on the ground
+    const sh = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 0.28);
+    sh.addColorStop(0, 'rgba(0,0,0,.34)');
+    sh.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sh;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s * 0.28, s * 0.05, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // four legs, the far pair drawn darker behind the body
+    const hips = [-bodyW * 0.62, bodyW * 0.62];
+    [1, 0].forEach(function (far) {
+      hips.forEach(function (hx, i) {
+        const swing = walking ? Math.sin(phase + i * Math.PI) * s * (camel ? 0.045 : 0.028) : 0;
+        ctx.strokeStyle = far ? shade(fleeceDark, -0.24) : fleeceDark;
+        ctx.lineWidth = Math.max(1.1, s * (camel ? 0.030 : 0.034));
+        ctx.beginPath();
+        ctx.moveTo(hx, bodyY + bodyH * 0.45);
+        ctx.lineTo(hx + swing, -s * 0.012);
+        ctx.stroke();
+        // a small hoof
+        ctx.fillStyle = far ? shade(fleeceDark, -0.4) : shade(fleeceDark, -0.2);
+        ctx.beginPath();
+        ctx.ellipse(hx + swing, -s * 0.008, s * 0.020, s * 0.010, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    });
+
+    // the barrel of the body
+    const bg = ctx.createLinearGradient(0, bodyY - bodyH, 0, bodyY + bodyH);
+    bg.addColorStop(0, shade(fleece, 0.10));
+    bg.addColorStop(1, shade(fleece, -0.18));
+    ctx.fillStyle = bg;
+
+    if (camel) {
+      ctx.beginPath();
+      ctx.ellipse(0, bodyY, bodyW, bodyH, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // the hump, sitting on the back of the barrel
+      ctx.fillStyle = shade(fleece, 0.06);
+      ctx.beginPath();
+      ctx.moveTo(-bodyW * 0.58, bodyY - bodyH * 0.55);
+      ctx.quadraticCurveTo(-bodyW * 0.08, bodyY - bodyH * 2.15, bodyW * 0.44, bodyY - bodyH * 0.68);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      // A sheep: bumps around the body first, then the body over them, so the
+      // silhouette comes out fleecy instead of a smooth bean.
+      ctx.fillStyle = shade(fleece, -0.04);
+      for (let k = 0; k < 10; k++) {
+        const a = (k / 10) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * bodyW * 0.80, bodyY + Math.sin(a) * bodyH * 0.74, s * 0.042, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = bg;
+      ctx.beginPath();
+      ctx.ellipse(0, bodyY, bodyW, bodyH, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // neck: short and level for a sheep, long and rising for a camel
+    const neckFromX = bodyW * 0.62;
+    const neckFromY = bodyY - bodyH * 0.30;
+    const neckToX = camel ? bodyW * 1.32 : bodyW * 1.06;
+    const neckToY = camel ? bodyY - bodyH * 2.30 : bodyY - bodyH * 0.92;
+    ctx.strokeStyle = shade(fleece, -0.06);
+    ctx.lineWidth = Math.max(1.8, s * (camel ? 0.062 : 0.056));
+    ctx.beginPath();
+    ctx.moveTo(neckFromX, neckFromY);
+    ctx.quadraticCurveTo(neckToX - s * 0.02, neckFromY - (neckFromY - neckToY) * 0.45, neckToX, neckToY);
+    ctx.stroke();
+
+    // head, and for a sheep the woolly crown over it
+    ctx.fillStyle = shade(fleece, 0.02);
+    ctx.beginPath();
+    ctx.ellipse(neckToX + s * 0.030, neckToY - s * 0.004, s * 0.048, s * 0.036, -0.30, 0, Math.PI * 2);
+    ctx.fill();
+    // muzzle
+    ctx.fillStyle = shade(fleece, -0.24);
+    ctx.beginPath();
+    ctx.ellipse(neckToX + s * 0.068, neckToY + s * 0.012, s * 0.020, s * 0.015, -0.20, 0, Math.PI * 2);
+    ctx.fill();
+    // ear
+    ctx.fillStyle = shade(fleece, -0.10);
+    ctx.beginPath();
+    ctx.ellipse(neckToX + s * 0.006, neckToY - s * 0.034, s * 0.019, s * 0.010, -0.65, 0, Math.PI * 2);
+    ctx.fill();
+
+    // tail
+    ctx.strokeStyle = shade(fleece, -0.16);
+    ctx.lineWidth = Math.max(0.9, s * 0.014);
+    ctx.beginPath();
+    ctx.moveTo(-bodyW * 0.92, bodyY - bodyH * 0.28);
+    ctx.quadraticCurveTo(-bodyW * 1.18, bodyY - bodyH * 0.05, -bodyW * 1.10, bodyY + bodyH * 0.42);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  /* The company travels with him: each member holds a fixed place relative to the
+     pilgrim, so the group keeps its shape whatever the road progress. dx is how far
+     ahead of him across the screen — the direction they are all walking — and dy how
+     far back up the road, which makes them a little smaller and higher, the way
+     distance reads in this perspective. Every member is clamped to the canvas, so the
+     group never walks off the edge when he starts at the right of the screen.
+
+     On the finale the whole company goes in with him: each member walks the same
+     line to the landmark, spread out a little, so the ark or the sea swallows a
+     procession rather than one man. */
+  function drawCompany(company, w, h, progress, phase, walking, alpha, finale, finaleT) {
+    if (!company || !company.length) return;
+    const groundY = h * Scenes.GROUND;
+    const base = Math.min(w, h) * 0.23;
+    const px = w * Scenes.pilgrimX(progress);
+    const entering = !!(finale && finaleT > 0);
+    const e = entering ? easeInOut(clamp(finaleT, 0, 1)) : 0;
+
+    // furthest back first, so nearer figures overlap the ones behind them
+    const ordered = company.slice().sort(function (a, b) { return (b.dy || 0) - (a.dy || 0); });
+    ordered.forEach(function (c, i) {
+      const dx = c.dx || 0;
+      const dy = c.dy || 0;
+      let size = base * (c.scale || 0.8) * (1 - dy * 1.1);
+      // ahead of him along the road, kept clear of the screen edges
+      const margin = size * 0.42;
+      let x = Math.max(margin, Math.min(w - margin, px - w * dx));
+      // further up the road sits higher on screen, and shrinks a little with distance
+      let y = groundY - h * dy * 1.15;
+      let a = alpha * (0.92 - dy * 1.6);
+
+      if (entering) {
+        // Same walk as the pilgrim: along the ground and up into the landmark,
+        // shrinking as they go in. Spread across the landmark's width so they do not
+        // stack into a single column.
+        const spread = (i - (ordered.length - 1) / 2) * 0.035;
+        const tx = w * (finale.x + spread);
+        const ty = h * (Scenes.GROUND - finale.rise * (0.92 - Math.abs(spread) * 2.4));
+        x = lerp(x, tx, e);
+        y = lerp(y, ty, e);
+        size = size * (1 - finale.shrink * e);
+        // they fade a touch after he does, so the eye follows him in first
+        const into = clamp((finaleT - 0.62) / 0.38, 0, 1);
+        a = a * (1 - finale.fade * into * into);
+      }
+
+      if (a <= 0.01) return;
+      const gait = walking ? phase + i * 0.9 : phase * 0.4 + i;
+      ctx.globalAlpha = a;
+      if (c.kind === 'sheep' || c.kind === 'camel') {
+        drawAnimal(x, y, size, c.kind, gait, walking);
+      } else {
+        drawCompanion(x, y, size, c, gait, walking);
+      }
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
      GATE — a curtain of light across the road ahead.
 
      It stands between the pilgrim and the destination, on the road, so it
@@ -4937,6 +5401,14 @@ const Engine = (function () {
       palpha = 1 - f.fade * into * into;
     }
 
+    // The company travels with him, behind him on the road. Drawn before the
+    // pilgrim so he stays the figure the eye lands on, and it walks into the
+    // landmark with him on the finale.
+    if (stage.company && stage.company.length) {
+      drawCompany(stage.company, w, h, state.progress, phase, striding, 1,
+        state.finale, state.finaleT);
+    }
+
     ctx.globalAlpha = Math.max(0, palpha);
     drawPilgrim(px, py, pscale, stage.figure, phase, striding, state.miracle);
     ctx.globalAlpha = 1;
@@ -5004,6 +5476,16 @@ const Engine = (function () {
     state.dust = [];
     state.sparks = [];
     state.stepAcc = 0;
+    // The finale is geometry for the *previous* scene. Left set, the pilgrim keeps
+    // the old rise and fade: coming from the Red Sea (rise 0.40) into the ark left
+    // Noah hanging in mid-air, and a finaleT of 1 also made every Forward tap a
+    // no-op, so the stage could not be played at all.
+    state.finale = null;
+    state.finaleT = 0;
+    state.finaleOn = false;
+    state.lift = 0;
+    state.liftTarget = 0;
+    state.paused = false;
   }
 
   function walkTo(target) {
@@ -5463,6 +5945,10 @@ const UI = (function () {
     if (app.busy || app.complete) return;
     // The finale walk is not steerable: he is already on his way in.
     if (Engine.finaleT > 0) return;
+    // Every Forward tap is a gesture, and the question card opens on one of them.
+    // Spending the browser's first utterance here is what lets the narrator read
+    // that card out without a second tap.
+    Speech.prime();
     const stage = STAGES[app.stageIndex];
     const { at, gate } = forwardTarget();
 
@@ -5678,6 +6164,17 @@ const UI = (function () {
 
     showCard('question');
     $('q-prompt').scrollIntoView({ block: 'nearest' });
+
+    // Read the question and its answers without being asked. The gate opens on
+    // the tap that walks into it, so the gesture that unlocked audio is still
+    // fresh here; a short beat lets the card animate in first.
+    if (app.voice) {
+      clearTimeout(openQuestion._speak);
+      openQuestion._speak = setTimeout(() => {
+        if (app.busy !== true || $('question-overlay').hidden) return;
+        sayAloud(narrationFor(gate, stage), hear);
+      }, 520);
+    }
   }
 
   function answer(pick, gate, btn) {

@@ -17,6 +17,15 @@ const STAGES = [
     scene: 'red-sea',
     palette: { sky: ['#0b1a2e', '#123049'], land: '#1a2233', accent: '#3fa9c9' },
     figure: { robe: '#b8452f', cloak: '#7c2d1c', skin: '#c98f63', staff: true, beard: true },
+    // Exodus 12:37–38 — six hundred thousand on foot, and a mixed multitude.
+    company: [
+      { kind: 'folk', robe: '#7d6a4f', cloak: '#54452f', skin: '#b98a5e', scale: 0.86, dx: 0.085, dy: 0.006, beard: false },
+      { kind: 'folk', robe: '#6b6f8a', cloak: '#464a63', skin: '#c1916a', scale: 0.82, dx: 0.135, dy: 0.016, beard: true },
+      { kind: 'folk', robe: '#8a6a52', cloak: '#5c4633', skin: '#a97a52', scale: 0.80, dx: 0.180, dy: 0.026, beard: false },
+      { kind: 'child', robe: '#93705a', cloak: '#63503f', skin: '#c99a6e', scale: 0.55, dx: 0.045, dy: 0.030, beard: false },
+      { kind: 'sheep', scale: 0.60, dx: 0.105, dy: 0.036 },
+      { kind: 'sheep', scale: 0.52, dx: 0.205, dy: 0.012 },
+    ],
     intro: 'Walk toward the water. Pharaoh’s army is behind you.',
     approach: 'The sea stands in front. The people are afraid.',
     gates: [
@@ -65,6 +74,16 @@ const STAGES = [
     scene: 'ark',
     palette: { sky: ['#141c26', '#2a3038'], land: '#1b2029', accent: '#7d8f6a' },
     figure: { robe: '#6b7f4a', cloak: '#3f5230', skin: '#c08e62', staff: false, beard: true },
+    // Genesis 6:18–20, 7:7 — his sons and their wives, and the beasts with them.
+    company: [
+      { kind: 'folk', robe: '#5d6b57', cloak: '#3d4738', skin: '#bb8a61', scale: 0.86, dx: 0.080, dy: 0.006, beard: true },
+      { kind: 'folk', robe: '#7a6a58', cloak: '#514636', skin: '#c79a70', scale: 0.83, dx: 0.132, dy: 0.018, beard: false },
+      { kind: 'folk', robe: '#6d5f7d', cloak: '#483e54', skin: '#b3865f', scale: 0.81, dx: 0.182, dy: 0.030, beard: false },
+      { kind: 'child', robe: '#8a7a63', cloak: '#5b5142', skin: '#cb9d72', scale: 0.54, dx: 0.040, dy: 0.034, beard: false },
+      { kind: 'sheep', scale: 0.60, dx: 0.100, dy: 0.040 },
+      { kind: 'sheep', scale: 0.52, dx: 0.215, dy: 0.014 },
+      { kind: 'camel', scale: 0.80, dx: 0.245, dy: 0.044 },
+    ],
     intro: 'Walk toward the ark. The sky is already heavy.',
     approach: 'Rain begins to fall. The door is still open.',
     gates: [
@@ -113,6 +132,14 @@ const STAGES = [
     scene: 'jericho',
     palette: { sky: ['#2a1c22', '#3d2a24'], land: '#241d22', accent: '#d9a94e' },
     figure: { robe: '#8a6a3a', cloak: '#5a4222', skin: '#c9905f', staff: true, beard: true },
+    // Joshua 6:7–9 — the armed men pass before the ark, the priests with trumpets,
+    // and the rear guard behind.
+    company: [
+      { kind: 'soldier', robe: '#6a5a3e', cloak: '#463a26', skin: '#bb8a60', scale: 0.86, dx: 0.078, dy: 0.006, beard: true },
+      { kind: 'soldier', robe: '#75603f', cloak: '#4e4028', skin: '#c1916a', scale: 0.83, dx: 0.130, dy: 0.018, beard: false },
+      { kind: 'priest', robe: '#a89463', cloak: '#6f5f3c', skin: '#c39668', scale: 0.82, dx: 0.180, dy: 0.030, beard: true },
+      { kind: 'folk', robe: '#7f6a4c', cloak: '#57462f', skin: '#ab7d55', scale: 0.79, dx: 0.042, dy: 0.036, beard: false },
+    ],
     intro: 'Walk toward Jericho. Its gates are shut fast.',
     approach: 'The wall rises ahead, thick and unbroken.',
     gates: [
@@ -161,6 +188,13 @@ const STAGES = [
     scene: 'elah',
     palette: { sky: ['#1d2a2e', '#38484a'], land: '#222a2c', accent: '#8fb8a0' },
     figure: { robe: '#3f6f9a', cloak: '#2b4c6b', skin: '#d09a68', staff: false, beard: false },
+    // 1 Samuel 17:20 — David leaves the sheep with a keeper and runs to the army.
+    company: [
+      { kind: 'soldier', robe: '#55637a', cloak: '#374254', skin: '#bb8a60', scale: 0.84, dx: 0.082, dy: 0.008, beard: true },
+      { kind: 'soldier', robe: '#4c5a70', cloak: '#313b4b', skin: '#c49468', scale: 0.81, dx: 0.140, dy: 0.020, beard: true },
+      { kind: 'sheep', scale: 0.56, dx: 0.045, dy: 0.032 },
+      { kind: 'sheep', scale: 0.50, dx: 0.200, dy: 0.012 },
+    ],
     intro: 'Walk into the valley. Something enormous waits on the ridge.',
     approach: 'Goliath’s voice rolls down the slope.',
     gates: [
@@ -209,6 +243,14 @@ const STAGES = [
     scene: 'carmel',
     palette: { sky: ['#2b1d16', '#4a2f1c'], land: '#231a16', accent: '#e8863c' },
     figure: { robe: '#8a5a2e', cloak: '#4f3418', skin: '#c08a5a', staff: true, beard: true },
+    // 1 Kings 18:21–24 — Elijah speaks to all the people, and the prophets of Baal
+    // stand by their altar.
+    company: [
+      { kind: 'folk', robe: '#6f5c3c', cloak: '#4b3d26', skin: '#b9875c', scale: 0.85, dx: 0.080, dy: 0.006, beard: true },
+      { kind: 'folk', robe: '#5f6a4c', cloak: '#404934', skin: '#c3946a', scale: 0.82, dx: 0.132, dy: 0.020, beard: false },
+      { kind: 'priest', robe: '#6b4a63', cloak: '#47303f', skin: '#b2835a', scale: 0.80, dx: 0.180, dy: 0.032, beard: true },
+      { kind: 'folk', robe: '#7a6a52', cloak: '#544733', skin: '#ab7c54', scale: 0.78, dx: 0.044, dy: 0.038, beard: false },
+    ],
     intro: 'Climb toward Carmel. The altar stands unlit.',
     approach: 'Two altars. One God will answer with fire.',
     gates: [
@@ -257,6 +299,12 @@ const STAGES = [
     scene: 'nineveh',
     palette: { sky: ['#10202c', '#1d3a44'], land: '#141d26', accent: '#5aa8b8' },
     figure: { robe: '#4a7a86', cloak: '#2e5460', skin: '#c8905f', staff: false, beard: true },
+    // Jonah 1:3–5 — the ship, its sailors, and the cargo they threw overboard.
+    company: [
+      { kind: 'sailor', robe: '#3f6070', cloak: '#2b4450', skin: '#bb8a60', scale: 0.85, dx: 0.080, dy: 0.008, beard: true },
+      { kind: 'sailor', robe: '#466a76', cloak: '#304b55', skin: '#c49167', scale: 0.82, dx: 0.138, dy: 0.022, beard: false },
+      { kind: 'sheep', scale: 0.50, dx: 0.196, dy: 0.014 },
+    ],
     intro: 'Walk toward the sea. A ship waits at Joppa.',
     approach: 'The storm rises. The sea will not be still.',
     gates: [
@@ -305,6 +353,12 @@ const STAGES = [
     scene: 'den',
     palette: { sky: ['#151222', '#241c33'], land: '#1a1622', accent: '#9a7ec9' },
     figure: { robe: '#5a4a8a', cloak: '#382a5e', skin: '#c08a62', staff: false, beard: true },
+    // Daniel 6:10–11 — he prays with his windows open; the men who watched him
+    // stand outside.
+    company: [
+      { kind: 'folk', robe: '#5b5470', cloak: '#3e3950', skin: '#b98860', scale: 0.84, dx: 0.086, dy: 0.010, beard: true },
+      { kind: 'folk', robe: '#4f5470', cloak: '#363a50', skin: '#c29369', scale: 0.80, dx: 0.148, dy: 0.026, beard: false },
+    ],
     intro: 'Walk toward the den. The stone is already sealed.',
     approach: 'Something moves in the dark below the stone.',
     gates: [
@@ -353,6 +407,12 @@ const STAGES = [
     scene: 'jordan',
     palette: { sky: ['#1a2430', '#33465a'], land: '#1e2833', accent: '#c9b98a' },
     figure: { robe: '#8a7a52', cloak: '#5a4e32', skin: '#c08a5f', staff: true, beard: true },
+    // Matthew 3:5–6 — Jerusalem, all Judea and the region round about came to him.
+    company: [
+      { kind: 'folk', robe: '#6f6350', cloak: '#4b4234', skin: '#bb8a61', scale: 0.85, dx: 0.080, dy: 0.006, beard: true },
+      { kind: 'folk', robe: '#7a6c55', cloak: '#524936', skin: '#c4946a', scale: 0.82, dx: 0.136, dy: 0.020, beard: false },
+      { kind: 'folk', robe: '#6b6358', cloak: '#47423a', skin: '#a97a52', scale: 0.80, dx: 0.186, dy: 0.032, beard: false },
+    ],
     intro: 'Walk toward the Jordan. Someone is waiting in the water.',
     approach: 'The heavens are about to open.',
     gates: [
